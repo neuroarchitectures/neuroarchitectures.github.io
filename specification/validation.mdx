@@ -36,7 +36,7 @@ A conforming NAXS document MUST satisfy:
 The following are not errors but SHOULD be flagged:
 
 - Components with `type: "custom"` and empty `params`.
-- Components without a `scope`.
+- Components without a `scope` **when scope usage is inconsistent within the document** — i.e. some components carry a `scope` while others do not. A document that omits `scope` everywhere is consistent (scope is optional metadata, [§12](/specification/graph-model#12-scope-notation)) and produces no warning.
 - Parameter names not in the standard registry for the given `type`.
 - Documents without a `description`.
 

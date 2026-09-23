@@ -18,6 +18,7 @@ SRC = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "../naxs/specification.
 OUT = pathlib.Path(__file__).resolve().parent.parent / "specification"
 
 RAW_SPEC_URL = "https://github.com/neuroarchitectures/naxs/blob/main/specification.md"
+RAW_SPEC_URL_BASE = "https://github.com/neuroarchitectures/naxs/blob/main"
 
 # (slug, title, description, [section keys], keep_header_block)
 PAGES = [
@@ -98,6 +99,15 @@ def build_page_map() -> dict[str, str]:
 
 
 def rewrite_anchors(text: str, page_of: dict[str, str]) -> str:
+    # repo-relative file links in the spec (e.g. the License section's
+    # LICENSE / LICENSE-CC-BY-4.0.md references) become absolute GitHub URLs
+    repo_file_links = {
+        "LICENSE": f"{RAW_SPEC_URL_BASE}/LICENSE",
+        "LICENSE-CC-BY-4.0.md": f"{RAW_SPEC_URL_BASE}/LICENSE-CC-BY-4.0.md",
+    }
+    for fname, url in repo_file_links.items():
+        text = text.replace(f"]({fname})", f"]({url})")
+
     def repl(m: re.Match) -> str:
         anchor = m.group(1)
         target = None

@@ -11,9 +11,9 @@ The following parameter names appear across the 288 architectures in the Atlas k
 
 | Parameter | Type | Used By | Example |
 |-----------|------|---------|---------|
-| `numHeads` | integer | `multiHeadAttention`, `groupedQueryAttention`, `transformerBlock` | `12` |
-| `hiddenDim` | integer | `multiHeadAttention`, `feedForward` | `768` |
-| `embedDim` | integer | `groupedQueryAttention` | `4096` |
+| `numHeads` | integer | `multiHeadAttention`, `groupedQueryAttention`, `transformerBlock`, `mla` | `12` |
+| `hiddenDim` | integer | `multiHeadAttention`, `feedForward`, `swiglu`, `geglu` | `768` |
+| `embedDim` | integer | `groupedQueryAttention`, `swiglu`, `geglu`, `feedForward`, `transformerBlock`, `moeLayer`, `sharedExpertMoE`, `mla`, `positionalEncoding` | `4096` |
 | `numKVHeads` | integer | `groupedQueryAttention` | `8` |
 | `headDim` | integer | `groupedQueryAttention` | `128` |
 | `kvLatentDim` | integer | `mla` | `512` |
@@ -60,12 +60,13 @@ The following parameter names appear across the 288 architectures in the Atlas k
 |-----------|------|---------|---------|
 | `ffDim` | integer | `feedForward` | `3072` |
 | `intermediateSize` | integer | `swiglu`, `geglu` | `11008` |
-| `dim` | integer | `swiglu`, `geglu` | `4096` |
+| `dim` | integer | `swiglu`, `geglu`, `concatenate` | `4096` |
 
 ### MoE Parameters
 
 | Parameter | Type | Used By | Example |
 |-----------|------|---------|---------|
+| `embedDim` | integer | `moeLayer`, `sharedExpertMoE` | `4096` |
 | `numExperts` | integer | `moeLayer`, `sharedExpertMoE` | `256` |
 | `expertDim` | integer | `moeLayer`, `sharedExpertMoE` | `7168` |
 | `topK` | integer | `moeLayer`, `sharedExpertMoE` | `8` |
@@ -86,6 +87,14 @@ The following parameter names appear across the 288 architectures in the Atlas k
 |-----------|------|---------|---------|
 | `channels` | integer | `seBlock` | `32` |
 | `reduction` | integer | `seBlock` | `4` |
+
+### Structural Parameters
+
+| Parameter | Type | Used By | Example |
+|-----------|------|---------|---------|
+| `dim` | integer | `concatenate` | `1` |
+| `axis` | integer | `concatenate` | `1` |
+| `numInputs` | integer | `concatenate` | `3` |
 
 ### Input Parameters
 
@@ -195,4 +204,8 @@ To ensure round-trip fidelity (read → write → read produces identical semant
 
 ## License
 
-This specification is licensed under the Creative Commons Attribution 4.0 International License (CC-BY-4.0) and the Apache License 2.0. Implementations may choose either license.
+This specification document — `specification.md`, including the JSON examples embedded within it — is licensed under the **Creative Commons Attribution 4.0 International Public License (CC-BY-4.0)**. The full legal code is available as [`LICENSE-CC-BY-4.0.md`](https://github.com/neuroarchitectures/naxs/blob/main/LICENSE-CC-BY-4.0.md) in the repository root.
+
+All other artifacts in the repository — the machine-readable JSON Schema (`naxs/v0.1/schema.json`), the example documents (`naxs/v0.1/examples/`), and the `pynaxs` reference validator — are licensed under the **Apache License 2.0** (see [`LICENSE`](https://github.com/neuroarchitectures/naxs/blob/main/LICENSE)).
+
+Implementations may choose either license.

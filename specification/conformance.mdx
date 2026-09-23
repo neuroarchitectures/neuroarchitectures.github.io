@@ -80,4 +80,5 @@ Connection fields (`id`, `from`, `to`, `fromPort`, `toPort`) are unchanged.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 0.1.1 | 2026-09-23 | Evidence-based registry update from full-atlas validation (288 architectures): `embedDim`/`hiddenDim` added as standard params for `swiglu`, `geglu`, `feedForward`, `moeLayer`, `sharedExpertMoE`, `mla` (+`numHeads`), `positionalEncoding`; `dim`/`axis`/`numInputs` added for `concatenate` (§7.1, Appendix A). §13.4 scope warning narrowed to inconsistent scope usage within a document. |
 | 0.1 | 2026-09-23 | Initial public draft. Includes block templates ([§25](/specification/block-templates#25-block-templates-and-repetition)): reusable subgraph definitions, `block_ref` components, `repeat` directives for layer/block repetition, parameter binding, and scope index substitution. |

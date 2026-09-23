@@ -45,7 +45,7 @@ The following types are recognized in NAXS 0.1. Types not in this list are treat
 | `groupedQueryAttention` | Grouped-query attention (GQA) | `embedDim`, `numHeads`, `numKVHeads`, `headDim` |
 | `crossAttention` | Cross-attention between two streams | `numHeads`, `hiddenDim` |
 | `attention` | Generic attention (unspecified variant) | — |
-| `mla` | Multi-head latent attention (DeepSeek MLA) | `kvLatentDim`, `qLatentDim`, `ropeHeadDim` |
+| `mla` | Multi-head latent attention (DeepSeek MLA) | `embedDim`, `numHeads`, `kvLatentDim`, `qLatentDim`, `ropeHeadDim` |
 
 #### Normalization
 
@@ -69,10 +69,10 @@ The following types are recognized in NAXS 0.1. Types not in this list are treat
 
 | Type | Description | Key Parameters |
 |------|-------------|----------------|
-| `feedForward` | Standard feed-forward network | `hiddenDim`, `ffDim` |
+| `feedForward` | Standard feed-forward network | `embedDim`, `hiddenDim`, `ffDim` |
 | `ffn` | Generic feed-forward (alias) | — |
-| `swiglu` | SwiGLU FFN | `intermediateSize`, `dim` |
-| `geglu` | GeGLU FFN | `intermediateSize`, `dim` |
+| `swiglu` | SwiGLU FFN | `embedDim`, `hiddenDim`, `dim`, `intermediateSize` |
+| `geglu` | GeGLU FFN | `embedDim`, `hiddenDim`, `dim`, `intermediateSize` |
 
 #### Structural
 
@@ -80,7 +80,7 @@ The following types are recognized in NAXS 0.1. Types not in this list are treat
 |------|-------------|----------------|
 | `add` | Element-wise addition (residual connection) | — |
 | `residual` | Residual connection wrapper | — |
-| `concatenate` | Tensor concatenation | — |
+| `concatenate` | Tensor concatenation | `dim`, `axis`, `numInputs` |
 | `multiply` | Element-wise multiplication (gating) | — |
 | `transformerBlock` | Composite transformer block | `embedDim`, `numHeads`, `ffDim` |
 
@@ -88,8 +88,8 @@ The following types are recognized in NAXS 0.1. Types not in this list are treat
 
 | Type | Description | Key Parameters |
 |------|-------------|----------------|
-| `moeLayer` | Mixture of experts layer | `numExperts`, `expertDim`, `topK` |
-| `sharedExpertMoE` | MoE with shared experts | `numExperts`, `expertDim`, `topK`, `numSharedExperts` |
+| `moeLayer` | Mixture of experts layer | `embedDim`, `numExperts`, `expertDim`, `topK` |
+| `sharedExpertMoE` | MoE with shared experts | `embedDim`, `numExperts`, `expertDim`, `topK`, `numSharedExperts` |
 | `patchEmbed` | Patch embedding (ViT) | `imgSize`, `patchSize`, `embedDim`, `inChans` |
 | `seBlock` | Squeeze-and-excitation block | `channels`, `reduction` |
 | `gcn_conv` | Graph convolution layer | — |
