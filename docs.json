@@ -1,0 +1,58 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "Neuroarchitectures",
+  "theme": "mint",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://neuroarchitectures.github.io"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#6366f1",
+    "light": "#818cf8",
+    "dark": "#818cf8"
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/neuroarchitectures"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get started",
+    "url": "/quickstart"
+  },
+  "navigation": {
+    "pages": ["index"],
+    "groups": [
+      {
+        "group": "Get Started",
+        "pages": ["quickstart", "examples"]
+      },
+      {
+        "group": "Specification",
+        "pages": [
+          "specification/introduction",
+          "specification/quick-reference",
+          "specification/document-structure",
+          "specification/operator-registry",
+          "specification/graph-model",
+          "specification/metadata-and-provenance",
+          "specification/validation",
+          "specification/annotated-examples",
+          "specification/conformance",
+          "specification/block-templates",
+          "specification/appendices"
+        ]
+      },
+      {
+        "group": "Community",
+        "pages": ["community"]
+      }
+    ]
+  },
+  "footerSocials": {
+    "github": "https://github.com/neuroarchitectures"
+  }
+}

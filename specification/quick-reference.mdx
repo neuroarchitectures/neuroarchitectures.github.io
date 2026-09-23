@@ -1,0 +1,61 @@
+---
+title: Quick Reference
+description: A one-page cheat sheet of required fields and key rules — built for agents coding against the spec.
+---
+
+# Quick Reference Card
+
+> **For agents coding against this spec:** Start here. Everything below is the full detail.
+
+**NAXS = a JSON file describing a neural architecture as a directed graph.**
+
+```json
+{
+  "spec_version": "1.0",          // REQUIRED — must be "1.0"
+  "id": "my-arch",                // REQUIRED — URL-safe slug
+  "name": "My Architecture",      // REQUIRED — display name
+  "components": [ ... ],          // REQUIRED — graph nodes (≥1)
+  "connections": [ ... ],         // REQUIRED — graph edges (may be empty)
+  "description": "...",           // optional
+  "block_templates": [ ... ],     // optional — see §25
+  "metadata": { ... },            // optional — vendor info
+  "provenance": { ... }           // optional — origin info
+}
+```
+
+**Component (node):**
+```json
+{
+  "id": "n1",                     // REQUIRED — unique, no dots/whitespace
+  "type": "conv2d",               // REQUIRED — operator type (§7)
+  "name": "Conv1",                // REQUIRED — display name
+  "params": { "inChannels": 3 }, // REQUIRED — may be {}
+  "inputs": ["n0"],              // REQUIRED — source IDs
+  "outputs": ["n2"],             // REQUIRED — target IDs
+  "scope": "backbone.layer.0",   // optional — dot-separated hierarchy
+  "position": { "x": 100, "y": 200 }, // optional — visual only
+  "block_ref": "template_id",    // optional — see §25.3
+  "repeat": { "count": 12 }      // optional — see §25.4
+}
+```
+
+**Connection (edge):**
+```json
+{
+  "id": "c1",                     // REQUIRED — unique
+  "from": "n1",                  // REQUIRED — source component ID
+  "to": "n2",                    // REQUIRED — target component ID
+  "fromPort": "bottom",          // optional — visual hint
+  "toPort": "top"                // optional — visual hint
+}
+```
+
+**Parameter values allowed:** `integer`, `float`, `boolean`, `string`, `array` (of int/string).  
+**NOT allowed:** `null`, nested objects, arrays of arrays.
+
+**Key rules at a glance:**
+- Component `inputs`/`outputs` and `connections` array MUST be consistent (§13.2).
+- Unknown fields MUST be preserved (§4.3, §5.3).
+- Unknown operator types MUST NOT cause failure (§7.3).
+- Graph MAY be cyclic (§13.2, rule 11).
+- Block templates expand to standard components (§25).

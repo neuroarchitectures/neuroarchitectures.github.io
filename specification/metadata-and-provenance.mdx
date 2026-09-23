@@ -1,0 +1,89 @@
+---
+title: Metadata & Provenance
+description: Vendor metadata, provenance tracking, and the extension model.
+---
+
+# 9. Metadata
+
+The `metadata` object provides vendor-specific information that does not affect architectural semantics.
+
+```json
+{
+  "metadata": {
+    "framework": "pytorch",
+    "framework_version": "2.1.0",
+    "paper": "https://arxiv.org/abs/1810.04805",
+    "checkpoint": "https://huggingface.co/bert-base-uncased",
+    "license": "apache-2.0",
+    "tags": ["encoder", "transformer", "nlp"]
+  }
+}
+```
+
+Metadata fields are not standardized by NAXS. Consumers MUST preserve all metadata fields. Common conventions:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `framework` | string | Source framework (e.g. `"pytorch"`, `"jax"`, `"tensorflow"`) |
+| `framework_version` | string | Framework version |
+| `paper` | string | URL to the original paper |
+| `checkpoint` | string | URL or path to weight checkpoint |
+| `license` | string | License identifier |
+| `tags` | array of strings | Free-form tags |
+
+## 10. Provenance
+
+The `provenance` object records the origin and transformation history of the document.
+
+```json
+{
+  "provenance": {
+    "source": "atlas/architectures/bert-base/model.json",
+    "imported_at": "2026-09-22T12:00:00Z",
+    "imported_by": "anad-atlas v0.1.0",
+    "original_format": "atlas-model-json",
+    "transformations": []
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `source` | string | Path or URL to the original source document. |
+| `imported_at` | string | ISO 8601 timestamp of import. |
+| `imported_by` | string | Tool and version that produced this document. |
+| `original_format` | string | Format of the source (e.g. `"atlas-model-json"`, `"pytorch-config"`, `"onnx"`, `"manual"`). |
+| `transformations` | array | List of transformation steps applied. Each entry is an object with `operation`, `timestamp`, and `description`. |
+
+Provenance is optional. When present, it enables traceability and reproducibility.
+
+## 11. Extension Model
+
+### 11.1 Vendor Extensions
+
+Vendors MAY add custom fields at any level (top-level, component, connection) without modifying the spec. These fields:
+
+- MUST NOT conflict with NAXS-defined field names.
+- MUST be preserved by conforming consumers.
+- SHOULD use a vendor prefix to avoid collisions (e.g. `"vendor:optimizer_state"`, `"acme:quantization"`).
+
+### 11.2 Operator Type Registration
+
+New operator types can be proposed for inclusion in the standard registry. The process:
+
+1. Define the type name, description, expected parameters, and input/output arity.
+2. Provide at least 3 real-world architecture examples using the type.
+3. Submit a PR to the NAXS specification repository.
+4. Types are added in the next minor version.
+
+### 11.3 Versioning
+
+NAXS uses semantic versioning:
+
+- **Major** (1.0 → 2.0): Breaking changes to required fields or semantics.
+- **Minor** (1.0 → 1.1): New optional fields, new operator types, new standard metadata keys.
+- **Patch** (1.0.0 → 1.0.1): Clarifications, documentation fixes, schema corrections.
+
+The `spec_version` field uses major.minor format (e.g. `"1.0"`).
+
+Consumers MUST check `spec_version` and reject only if the major version is higher than supported. Unknown minor version fields MUST be preserved.

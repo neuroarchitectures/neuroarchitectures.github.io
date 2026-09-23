@@ -1,0 +1,37 @@
+---
+title: Introduction
+description: What NAXS is and is not, its design principles, and how it relates to ONNX, PyTorch configs, and MLIR.
+---
+> **Source of truth:** this page mirrors [`specification.md`](https://github.com/neuroarchitectures/naxs/blob/main/specification.md) in the naxs repository.
+**Version:** 1.0  
+**Status:** Draft for Public Review  
+**License:** CC-BY-4.0 / Apache-2.0 (dual)  
+**Repository:** https://github.com/neuroarchitectures/naxs  
+**Created:** 2026-09-23  
+
+# 1. Abstract
+
+The **Neural Architecture Exchange Specification (NAXS)** defines a vendor-independent, framework-agnostic JSON format for describing neural network architectures as directed graphs of typed, parameterized components.
+
+NAXS is **not** an execution format (like ONNX), a training configuration (like PyTorch Lightning YAML), or a compiler IR (like MLIR). It is an **architecture topology exchange format**: it describes *what the architecture is* — its components, their parameters, and their connectivity — without prescribing *how* it runs.
+
+The goal is interoperability: any tool, vendor, research group, or automated agent can produce or consume a NAXS document to share, compare, transform, or analyze a neural architecture without depending on a specific framework.
+
+## 2. Design Principles
+
+1. **Framework-independent.** The format references operator types by name (e.g. `conv2d`, `multiHeadAttention`), not by framework API (`torch.nn.Conv2d`, `flax.linen.Conv`).
+2. **Graph-first.** An architecture is a directed graph. Connectivity is explicit, not implicit in code structure.
+3. **Parameterized.** Each component carries typed parameters. The same operator type produces different concrete nodes depending on parameter values.
+4. **Human-readable.** The JSON is verbose but simple. A human can read and hand-author a NAXS document without specialized tooling.
+5. **Extensible.** Unknown fields are preserved, not rejected. Vendors can add metadata without breaking consumers.
+6. **Minimal core.** The required fields are few. Everything else is optional. A valid NAXS document can be as small as 10 lines.
+
+## 3. Relationship to Other Formats
+
+| Format | Purpose | NAXS Relationship |
+|--------|---------|-------------------|
+| **ONNX** | Executable computation graph | NAXS describes architecture topology; ONNX describes runtime computation. A NAXS document can be *lowered* to ONNX via implementation bindings. |
+| **PyTorch `config.json`** | Model-specific configuration | NAXS is model-agnostic; one format for all architectures. PyTorch configs can be *imported* into NAXS. |
+| **HuggingFace `model.safetensors`** | Weight checkpoint | NAXS explicitly excludes weights. Weights are external artifacts referenced by metadata. |
+| **MLIR** | Compiler intermediate representation | NAXS is a higher-level exchange format. MLIR can be a compilation target. |
+| **Netron JSON** | Visualization metadata | NAXS includes visual position hints but is not a visualization format. |

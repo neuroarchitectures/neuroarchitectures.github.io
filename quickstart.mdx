@@ -1,0 +1,127 @@
+---
+title: Quickstart
+description: Author and validate your first NAXS document in five minutes.
+---
+
+# Quickstart
+
+This guide walks you through creating a NAXS document, validating it with the `pynaxs` reference validator, and checking it against the JSON Schema.
+
+## 1. Write a NAXS document
+
+Create a file `minimal-mlp.naxs.json`. It describes a one-layer MLP that maps a 10-dimensional input to 5 outputs:
+
+```json
+{
+  "spec_version": "1.0",
+  "id": "minimal-mlp",
+  "name": "Minimal MLP",
+  "components": [
+    {
+      "id": "n1",
+      "type": "input",
+      "name": "x",
+      "params": { "shape": [10] },
+      "inputs": [],
+      "outputs": ["n2"]
+    },
+    {
+      "id": "n2",
+      "type": "linear",
+      "name": "fc1",
+      "params": { "inFeatures": 10, "outFeatures": 5 },
+      "inputs": ["n1"],
+      "outputs": []
+    }
+  ],
+  "connections": [
+    { "id": "c1", "from": "n1", "to": "n2", "fromPort": "bottom", "toPort": "top" }
+  ]
+}
+```
+
+That is a complete, valid NAXS 1.0 document. Required pieces:
+
+| Piece | Role |
+|-------|------|
+| `spec_version` | Must be `"1.0"` |
+| `id`, `name` | Identity and display name |
+| `components[]` | The graph nodes — each a typed operator with `params` |
+| `connections[]` | The graph edges — explicit data flow, consistent with `inputs`/`outputs` |
+
+## 2. Validate with pynaxs
+
+`pynaxs` is the reference Python validator. It checks all rules from §13 (structural integrity, consistency, parameter validity, soft validation) and §25.11 (block template validation).
+
+```bash
+git clone https://github.com/neuroarchitectures/naxs.git
+cd naxs/pynaxs
+pip install -e .
+
+# Validate a single file
+pynaxs validate path/to/minimal-mlp.naxs.json
+
+# Validate a whole directory
+pynaxs validate path/to/architectures/
+
+# JSON output for CI integration
+pynaxs validate --format json path/to/minimal-mlp.naxs.json
+```
+
+Use `--strict` to show only errors, or `--format json` in CI pipelines.
+
+Or validate programmatically:
+
+```python
+from pynaxs import NaxsValidator
+
+validator = NaxsValidator()
+result = validator.validate_file("minimal-mlp.naxs.json")
+
+if result.is_valid():
+    print(f"Valid! ({len(result.warnings)} warnings)")
+else:
+    for err in result.errors:
+        print(f"ERROR [{err.rule}] {err.path}: {err.message}")
+```
+
+## 3. Validate with the JSON Schema
+
+For structural validation in any language, use the [JSON Schema](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/schema.json) (draft 2020-12) directly:
+
+```bash
+pip install jsonschema
+python -c "
+import json, jsonschema
+schema = json.load(open('naxs/v1.0/schema.json'))
+doc = json.load(open('minimal-mlp.naxs.json'))
+jsonschema.validate(doc, schema)
+print('Valid!')
+"
+```
+
+You can also reference the schema from your documents:
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/neuroarchitectures/naxs/main/naxs/v1.0/schema.json",
+  "spec_version": "1.0"
+}
+```
+
+## 4. Go further
+
+<CardGroup cols={2}>
+  <Card title="Examples gallery" icon="layout-grid" href="/examples" horizontal>
+    Study six annotated documents — symbolic shapes, vendor custom operators, and a 12-layer transformer compressed to 7 components with block templates.
+  </Card>
+  <Card title="Specification" icon="book-open" href="/specification/introduction" horizontal>
+    Read the full NAXS 1.0 specification.
+  </Card>
+  <Card title="Quick Reference Card" icon="table" href="/specification/quick-reference" horizontal>
+    A one-page cheat sheet of required fields and key rules — built for agents coding against the spec.
+  </Card>
+  <Card title="Block templates (§25)" icon="layers" href="/specification/block-templates" horizontal>
+    Define a reusable subgraph once, then reference and repeat it.
+  </Card>
+</CardGroup>

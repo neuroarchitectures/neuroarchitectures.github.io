@@ -1,0 +1,66 @@
+---
+title: Validation
+description: Structural, consistency, and parameter validation rules, plus the JSON Schema.
+---
+
+# 13. Validation Rules
+
+A conforming NAXS document MUST satisfy:
+
+### 13.1 Structural Integrity
+
+1. `spec_version`, `id`, `name`, `components` are present and non-null.
+2. `components` is a non-empty array.
+3. Every component has `id`, `type`, `name`, `params`, `inputs`, `outputs`.
+4. All component `id` values are unique within the document.
+5. All `inputs` and `outputs` values reference existing component IDs.
+6. If `connections` is present, every connection has `id`, `from`, `to`.
+7. All connection `from` and `to` values reference existing component IDs.
+8. All connection `id` values are unique within the document.
+
+### 13.2 Consistency
+
+9. For every component A that lists B in its `outputs`, B MUST list A in its `inputs`.
+10. For every connection `{ "from": A, "to": B }`, A MUST list B in its `outputs` and B MUST list A in its `inputs`.
+11. The graph MAY be acyclic or cyclic. Cyclic graphs (recurrent architectures) are valid.
+
+### 13.3 Parameter Validity
+
+12. `params` is a JSON object (may be empty `{}`).
+13. Parameter values are limited to: integer, float, boolean, string, array.
+14. Array elements are limited to: integer, string (symbolic dimension).
+15. Parameter values MUST NOT be `null`, nested objects, or arrays of arrays.
+
+### 13.4 Soft Validation (Warnings)
+
+The following are not errors but SHOULD be flagged:
+
+- Components with `type: "custom"` and empty `params`.
+- Components without a `scope`.
+- Parameter names not in the standard registry for the given `type`.
+- Documents without a `description`.
+
+> **Validation Checklist for Implementers:**
+> - [ ] All required fields present and non-null (rules 1–3, 6)
+> - [ ] All IDs unique (rules 4, 8)
+> - [ ] All references resolve to existing IDs (rules 5, 7)
+> - [ ] `inputs`/`outputs` bidirectional consistency (rules 9–10)
+> - [ ] No `null`/nested-object/array-of-array param values (rules 12–15)
+> - [ ] Soft warnings reported separately from errors (§13.4)
+> - [ ] Block template rules checked (§25.11) if `block_templates` present
+
+## 21. JSON Schema
+
+A machine-readable JSON Schema is provided alongside this specification at:
+
+```
+naxs/v1.0/schema.json
+```
+
+The schema defines:
+- Required and optional fields at each level.
+- Parameter value type constraints.
+- Component ID uniqueness (via `uniqueItemsProperties`).
+- Reference integrity (via `$ref` validation in application code, not JSON Schema).
+
+The JSON Schema is normative for structural validation. This document is normative for semantic validation.

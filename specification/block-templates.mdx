@@ -1,0 +1,527 @@
+---
+title: Block Templates & Repetition
+description: Reusable subgraph definitions, block references, repeat directives, and parameter binding.
+---
+
+# 25. Block Templates and Repetition
+
+NAXS requires every component to be listed individually — a 12-layer transformer has 48+ explicit component objects even though all 12 layers are structurally identical. This section introduces **block templates** and **repetition directives** that allow a single template definition to generate many concrete components, dramatically reducing document size and enabling true architectural reuse.
+
+### 25.1 The Problem
+
+Empirical analysis of the Atlas knowledge base (288 architectures, 9,735 components) reveals massive redundancy:
+
+| Architecture | Components | Unique Layer Patterns | Redundancy |
+|--------------|-----------|----------------------|------------|
+| BERT-Base | 51 | 1 (×12 layers) | 92% |
+| Llama-4-Scout | 434 | ~3 (×32 layers) | 87% |
+| DeepSeek-v3 | 371 | ~4 (×61 layers) | 84% |
+| ResNet-50 | 176 | ~4 (×16 blocks) | 75% |
+
+Without a repetition mechanism, every layer is fully expanded, making documents verbose, error-prone, and difficult to modify (changing `hiddenDim` requires editing 12 copies).
+
+### 25.2 Block Template Definition
+
+A **block template** is a named, parameterized subgraph definition stored in the top-level `block_templates` array. It defines:
+
+- A unique `id` for reference
+- A `params` schema listing the template's parameters
+- A `nodes` array of component prototypes (the subgraph topology)
+- An `edges` array of internal connections
+- An `interface` declaring external input/output ports
+
+```json
+{
+  "block_templates": [
+    {
+      "id": "transformer_encoder_layer",
+      "description": "Standard transformer encoder layer: attention + residual + LayerNorm + FFN + residual + LayerNorm",
+      "params": {
+        "hiddenDim": { "type": "integer", "description": "Hidden dimension size" },
+        "numHeads": { "type": "integer", "description": "Number of attention heads" },
+        "ffDim": { "type": "integer", "description": "Feed-forward intermediate dimension" }
+      },
+      "nodes": [
+        {
+          "id": "attn",
+          "type": "multiHeadAttention",
+          "name": "Attention",
+          "params": {
+            "numHeads": "$numHeads",
+            "hiddenDim": "$hiddenDim"
+          }
+        },
+        {
+          "id": "add1",
+          "type": "add",
+          "name": "ResidualAdd1",
+          "params": {}
+        },
+        {
+          "id": "ln1",
+          "type": "layerNorm",
+          "name": "LayerNorm1",
+          "params": { "normalizedShape": "$hiddenDim" }
+        },
+        {
+          "id": "ffn",
+          "type": "feedForward",
+          "name": "FFN",
+          "params": {
+            "hiddenDim": "$hiddenDim",
+            "ffDim": "$ffDim"
+          }
+        },
+        {
+          "id": "add2",
+          "type": "add",
+          "name": "ResidualAdd2",
+          "params": {}
+        },
+        {
+          "id": "ln2",
+          "type": "layerNorm",
+          "name": "LayerNorm2",
+          "params": { "normalizedShape": "$hiddenDim" }
+        }
+      ],
+      "edges": [
+        { "from": "attn", "to": "add1" },
+        { "from": "add1", "to": "ln1" },
+        { "from": "ln1", "to": "ffn" },
+        { "from": "ffn", "to": "add2" },
+        { "from": "add2", "to": "ln2" }
+      ],
+      "interface": {
+        "inputs": [
+          { "name": "x", "description": "Input tensor [batch, seq, hiddenDim]" }
+        ],
+        "outputs": [
+          { "name": "y", "source_node": "ln2", "description": "Output tensor [batch, seq, hiddenDim]" }
+        ]
+      }
+    }
+  ]
+}
+```
+
+> **For Implementers:** A block template's `nodes` are **prototypes** — they are not real components in the document graph. They only become real components when a `block_ref` component references and expands them. Think of templates as functions and `block_ref` components as function calls.
+
+### 25.3 Block Reference Components
+
+A component can reference a block template using the `block_ref` field. When a consumer encounters a `block_ref` component, it **expands** the referenced template: the template's nodes are instantiated and inserted into the document's component graph, replacing the reference component.
+
+```json
+{
+  "id": "layer_0",
+  "type": "block",
+  "name": "TransformerLayer_0",
+  "block_ref": "transformer_encoder_layer",
+  "params": {
+    "hiddenDim": 768,
+    "numHeads": 12,
+    "ffDim": 3072
+  },
+  "inputs": ["embed_out"],
+  "outputs": ["layer_1"]
+}
+```
+
+**Expansion semantics:**
+
+1. The consumer looks up `block_ref` in the document's `block_templates` array.
+2. Template parameters (declared in `params`) are bound to the values in the component's `params`.
+3. Each template node is instantiated with a **prefixed ID**: `{component_id}.{node_id}` (e.g. `layer_0.attn`).
+4. Parameter references (`$paramName`) in template node params are replaced with bound values.
+5. Template edges are instantiated between prefixed node IDs.
+6. The component's `inputs` connect to the template's first interface input; the template's interface output connects to the component's `outputs`.
+7. The expanded nodes inherit the component's `scope` (if set), with the template node's local scope appended.
+
+**A `block_ref` component is semantically equivalent to its expansion.** A document with block references and a document with the same components fully expanded produce identical architecture graphs. Consumers MAY expand block references eagerly (at load time) or lazily (on demand).
+
+### 25.4 Repeat Directive
+
+The `repeat` field on a component instructs the consumer to instantiate the component N times, creating a chain of repeated blocks. This is the primary mechanism for representing stacked layers (transformer layers, ResNet stages, etc.).
+
+```json
+{
+  "id": "layers",
+  "type": "block",
+  "name": "TransformerLayers",
+  "block_ref": "transformer_encoder_layer",
+  "params": {
+    "hiddenDim": 768,
+    "numHeads": 12,
+    "ffDim": 3072
+  },
+  "repeat": {
+    "count": 12,
+    "mode": "sequential"
+  },
+  "inputs": ["embed_out"],
+  "outputs": ["ln_final"]
+}
+```
+
+**Repeat modes:**
+
+| Mode | Description | Inter-layer Connection |
+|------|-------------|----------------------|
+| `sequential` | Instances are chained: output of instance *i* feeds into input of instance *i+1*. | Automatic: `instance[i].output → instance[i+1].input` |
+| `parallel` | All instances share the same input; outputs are collected (e.g. multi-head ensemble). | Automatic: `input → all instances`; all instance outputs → output node |
+| `stacked` | Instances are independent; the caller wires connections explicitly. | Manual: caller provides connections referencing expanded IDs |
+
+**Expanded ID scheme for repeated components:**
+
+For a component with `id: "layers"` and `repeat: { count: 3 }`:
+
+| Instance | Expanded ID | Scope (if component scope is `encoder`) |
+|----------|-------------|----------------------------------------|
+| 0 | `layers.0` | `encoder.layer.0` |
+| 1 | `layers.1` | `encoder.layer.1` |
+| 2 | `layers.2` | `encoder.layer.2` |
+
+Each instance's internal nodes are further prefixed: `layers.0.attn`, `layers.1.attn`, etc.
+
+**Scope index substitution:** When a repeated component has a `scope` field containing `$i`, the index variable is substituted:
+
+```json
+{
+  "scope": "encoder.layer.$i",
+  "repeat": { "count": 12, "mode": "sequential" }
+}
+```
+
+This produces scopes `encoder.layer.0`, `encoder.layer.1`, ..., `encoder.layer.11`.
+
+### 25.5 Parameter Binding
+
+Template node parameters use **`$`-prefixed references** to bind to template-level parameters:
+
+| Syntax | Meaning | Example |
+|--------|---------|---------|
+| `$paramName` | Reference to a template parameter | `"$hiddenDim"` → `768` |
+| `$i` | Current repetition index (0-based) | `"$i"` → `0`, `1`, ..., `11` |
+| `{$expr: "..."}` | Arithmetic expression over parameters | `{"$expr": "hiddenDim * 4"}` → `3072` |
+| Literal value | Passed through unchanged | `768`, `"gelu"`, `true` |
+
+**Expression syntax** supports `+`, `-`, `*`, `/`, parentheses, and parameter references (without `$`):
+
+```json
+{
+  "params": {
+    "ffDim": { "$expr": "hiddenDim * 4" },
+    "headDim": { "$expr": "hiddenDim / numHeads" }
+  }
+}
+```
+
+This allows derived parameters to be computed from base parameters without duplicating values.
+
+### 25.6 Per-Instance Parameter Overrides
+
+Individual repetition instances can override template parameters. The `repeat.overrides` array provides per-instance parameter values:
+
+```json
+{
+  "repeat": {
+    "count": 4,
+    "mode": "sequential",
+    "overrides": [
+      { "index": 0, "params": { "numHeads": 8 } },
+      { "index": 3, "params": { "numHeads": 16 } }
+    ]
+  }
+}
+```
+
+Instances not listed in `overrides` use the base `params`. This handles architectures where layer parameters vary across layers (e.g. growing attention heads, changing FFN dimensions).
+
+### 25.7 Nested Block Templates
+
+Block templates can reference other block templates, enabling hierarchical composition:
+
+```json
+{
+  "block_templates": [
+    {
+      "id": "transformer_stage",
+      "params": {
+        "numLayers": { "type": "integer" },
+        "hiddenDim": { "type": "integer" },
+        "numHeads": { "type": "integer" },
+        "ffDim": { "type": "integer" }
+      },
+      "nodes": [
+        {
+          "id": "layers",
+          "type": "block",
+          "block_ref": "transformer_encoder_layer",
+          "params": {
+            "hiddenDim": "$hiddenDim",
+            "numHeads": "$numHeads",
+            "ffDim": "$ffDim"
+          },
+          "repeat": {
+            "count": "$numLayers",
+            "mode": "sequential"
+          }
+        }
+      ],
+      "edges": [],
+      "interface": {
+        "inputs": [{ "name": "x" }],
+        "outputs": [{ "name": "y", "source_node": "layers" }]
+      }
+    }
+  ]
+}
+```
+
+Nesting depth is not limited by the spec. Consumers SHOULD detect and report circular block references.
+
+### 25.8 Complete Example: BERT-Base with Repetition
+
+The following NAXS document represents BERT-Base (12 transformer layers) using a single block template and a repeat directive — **5 components instead of 51**:
+
+```json
+{
+  "spec_version": "1.0",
+  "id": "bert-base",
+  "name": "BERT-Base",
+  "description": "BERT-Base: 12-layer transformer encoder, hidden size 768, 12 attention heads.",
+  "block_templates": [
+    {
+      "id": "transformer_encoder_layer",
+      "description": "Standard transformer encoder layer",
+      "params": {
+        "hiddenDim": { "type": "integer" },
+        "numHeads": { "type": "integer" },
+        "ffDim": { "type": "integer" }
+      },
+      "nodes": [
+        { "id": "attn", "type": "multiHeadAttention", "name": "Attention", "params": { "numHeads": "$numHeads", "hiddenDim": "$hiddenDim" } },
+        { "id": "add1", "type": "add", "name": "ResidualAdd1", "params": {} },
+        { "id": "ln1", "type": "layerNorm", "name": "LayerNorm1", "params": { "normalizedShape": "$hiddenDim" } },
+        { "id": "ffn", "type": "feedForward", "name": "FFN", "params": { "hiddenDim": "$hiddenDim", "ffDim": "$ffDim" } },
+        { "id": "add2", "type": "add", "name": "ResidualAdd2", "params": {} },
+        { "id": "ln2", "type": "layerNorm", "name": "LayerNorm2", "params": { "normalizedShape": "$hiddenDim" } }
+      ],
+      "edges": [
+        { "from": "attn", "to": "add1" },
+        { "from": "add1", "to": "ln1" },
+        { "from": "ln1", "to": "ffn" },
+        { "from": "ffn", "to": "add2" },
+        { "from": "add2", "to": "ln2" }
+      ],
+      "interface": {
+        "inputs": [{ "name": "x" }],
+        "outputs": [{ "name": "y", "source_node": "ln2" }]
+      }
+    }
+  ],
+  "components": [
+    {
+      "id": "input",
+      "type": "input",
+      "name": "Input",
+      "params": { "shape": [1, 512, 768] },
+      "inputs": [],
+      "outputs": ["embed"]
+    },
+    {
+      "id": "embed",
+      "type": "embedding",
+      "name": "Embedding",
+      "params": { "vocabSize": 30522, "embeddingDim": 768, "maxSeqLen": 512 },
+      "inputs": ["input"],
+      "outputs": ["layers"],
+      "scope": "embeddings"
+    },
+    {
+      "id": "layers",
+      "type": "block",
+      "name": "TransformerLayers",
+      "block_ref": "transformer_encoder_layer",
+      "params": { "hiddenDim": 768, "numHeads": 12, "ffDim": 3072 },
+      "repeat": { "count": 12, "mode": "sequential" },
+      "inputs": ["embed"],
+      "outputs": ["ln_f"],
+      "scope": "encoder.layer.$i"
+    },
+    {
+      "id": "ln_f",
+      "type": "layerNorm",
+      "name": "FinalLayerNorm",
+      "params": { "normalizedShape": 768 },
+      "inputs": ["layers"],
+      "outputs": ["output"],
+      "scope": "encoder"
+    },
+    {
+      "id": "output",
+      "type": "output",
+      "name": "Output",
+      "params": {},
+      "inputs": ["ln_f"],
+      "outputs": []
+    }
+  ],
+  "connections": [
+    { "id": "c1", "from": "input", "to": "embed" },
+    { "id": "c2", "from": "embed", "to": "layers" },
+    { "id": "c3", "from": "layers", "to": "ln_f" },
+    { "id": "c4", "from": "ln_f", "to": "output" }
+  ]
+}
+```
+
+**Expansion result:** This 5-component document expands to the same 51-component graph as the NAXS BERT-Base example ([§15](/specification/annotated-examples#15-full-example-bert-base-excerpt)). The expansion is:
+
+| Component | Expands To |
+|-----------|-----------|
+| `layers` (repeat: 12) | `layers.0` through `layers.11`, each containing 6 nodes (`attn`, `add1`, `ln1`, `ffn`, `add2`, `ln2`) |
+| Total expanded components | 51 (same as §15) |
+| Total expanded connections | 62 (same as §15) |
+
+### 25.9 Expansion Algorithm
+
+A conforming consumer MUST implement the following expansion algorithm:
+
+```
+function expand_document(doc):
+    templates = { t.id: t for t in doc.block_templates }
+    expanded_components = []
+    expanded_connections = []
+
+    for component in doc.components:
+        if component has "block_ref" and component has "repeat":
+            expanded = expand_repeated_block(component, templates)
+        elif component has "block_ref":
+            expanded = expand_single_block(component, templates)
+        else:
+            expanded = [component]  # pass-through
+
+        expanded_components.extend(expanded.nodes)
+        expanded_connections.extend(expanded.edges)
+
+    return Document(components=expanded_components, connections=expanded_connections)
+
+
+function expand_repeated_block(component, templates):
+    template = templates[component.block_ref]
+    instances = []
+
+    for i in range(component.repeat.count):
+        # Merge base params with per-instance overrides
+        params = component.params.copy()
+        for override in component.repeat.get("overrides", []):
+            if override.index == i:
+                params.update(override.params)
+
+        # Create instance with prefixed IDs
+        instance_prefix = f"{component.id}.{i}"
+        scope = substitute_index(component.scope, i)
+
+        nodes = []
+        for node in template.nodes:
+            expanded_node = {
+                "id": f"{instance_prefix}.{node.id}",
+                "type": node.type,
+                "name": f"{node.name}_{i}",
+                "params": resolve_params(node.params, params, i),
+                "scope": f"{scope}.{node.id}" if scope else node.id
+            }
+            nodes.append(expanded_node)
+
+        # Internal edges
+        edges = []
+        for edge in template.edges:
+            edges.append({
+                "from": f"{instance_prefix}.{edge.from}",
+                "to": f"{instance_prefix}.{edge.to}"
+            })
+
+        # Inter-instance connections (sequential mode)
+        if i > 0 and component.repeat.mode == "sequential":
+            prev_output = get_interface_output(instances[-1], template)
+            curr_input = get_interface_input(nodes[0], template)
+            edges.append({ "from": prev_output, "to": curr_input })
+
+        instances.append(Instance(nodes, edges))
+
+    # Connect first instance input to component inputs
+    # Connect last instance output to component outputs
+    return merge_instances(instances, component)
+
+
+function resolve_params(node_params, bound_params, index):
+    result = {}
+    for key, value in node_params:
+        if value is string and starts with "$":
+            param_name = value[1:]
+            if param_name == "i":
+                result[key] = index
+            else:
+                result[key] = bound_params[param_name]
+        elif value is object and has "$expr":
+            result[key] = eval_expr(value["$expr"], bound_params)
+        else:
+            result[key] = value  # literal
+    return result
+```
+
+### 25.10 Backward Compatibility
+
+Block templates are fully backward compatible:
+
+1. **Documents without `block_templates`, `block_ref`, or `repeat`** are processed identically — the expansion algorithm is a no-op pass-through.
+2. **A document with block templates expands to standard components and connections** — no `block_ref` or `repeat` fields remain after expansion.
+3. **Consumers SHOULD expand block references before graph analysis.** A consumer MAY choose to work with the unexpanded form for certain operations (e.g. counting layers, comparing architectures structurally).
+
+### 25.11 Validation Rules for Block Templates
+
+In addition to the rules in [§13](/specification/validation#13-validation-rules), documents with block templates MUST satisfy:
+
+1. Every `block_templates` entry has a unique `id`.
+2. Every `block_ref` value references an existing template `id`.
+3. Template `nodes` have unique `id` values within the template.
+4. Template `edges` reference existing node `id` values within the template.
+5. `repeat.count` is a positive integer (≥ 1).
+6. `repeat.mode` is one of `"sequential"`, `"parallel"`, `"stacked"`.
+7. Per-instance `overrides` indices are within `[0, count-1]`.
+8. No circular block references (template A references template B which references template A).
+9. All `$paramName` references in template nodes resolve to declared template parameters or the reserved `$i`.
+10. `{$expr: "..."}` expressions are syntactically valid and reference declared parameters.
+
+> **Block Template Validation Checklist for Implementers:**
+> - [ ] Template IDs unique (rule 1)
+> - [ ] All `block_ref` values resolve (rule 2)
+> - [ ] Node IDs unique within each template (rule 3)
+> - [ ] Edge `from`/`to` reference valid template nodes (rule 4)
+> - [ ] `repeat.count` ≥ 1 (rule 5)
+> - [ ] `repeat.mode` is valid enum value (rule 6)
+> - [ ] Override indices in range (rule 7)
+> - [ ] No circular references — detect via DFS/traversal (rule 8)
+> - [ ] All `$paramName` resolve to declared params or `$i` (rule 9)
+> - [ ] `$expr` expressions parse and reference valid params (rule 10)
+> - [ ] Post-expansion graph has no dangling refs or duplicate IDs
+
+### 25.12 Conformance Updates
+
+**Producer Conformance** (extends [§20.1](/specification/conformance#201-producer-conformance)):
+
+- A producer MAY emit `block_templates`, `block_ref`, and `repeat` fields.
+- A producer that emits block templates MUST ensure they expand to valid standard components.
+- A producer SHOULD use block templates for any architecture with ≥ 3 structurally identical repeated layers.
+
+**Consumer Conformance** (extends [§20.2](/specification/conformance#202-consumer-conformance)):
+
+- A consumer MUST recognize `block_templates`, `block_ref`, and `repeat` fields.
+- A consumer MUST expand block references when constructing the architecture graph.
+- A consumer MAY provide both expanded and unexpanded views.
+
+**Validator Conformance** (extends [§20.3](/specification/conformance#203-validator-conformance)):
+
+- A validator MUST check all rules in [§25.11](/specification/block-templates#2511-validation-rules-for-block-templates).
+- A validator SHOULD verify that expansion produces a valid graph (no dangling references, no duplicate IDs after expansion).

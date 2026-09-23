@@ -1,0 +1,150 @@
+---
+title: Document Structure
+description: Top-level JSON fields, component (node) definition, and parameter value types.
+---
+
+# 4. Document Structure
+
+A NAXS document is a single JSON object with the following top-level structure:
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/neuroarchitectures/naxs/main/naxs/v1.0/schema.json",
+  "spec_version": "1.0",
+  "id": "bert-base",
+  "name": "BERT-Base",
+  "description": "BERT-Base: 12-layer transformer encoder, hidden size 768.",
+  "components": [ ... ],
+  "connections": [ ... ]
+}
+```
+
+### 4.1 Required Top-Level Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `spec_version` | string | NAXS specification version. Must be `"1.0"`. |
+| `id` | string | Unique architecture identifier. Should be a URL-safe slug (e.g. `"bert-base"`, `"resnet-50"`). |
+| `name` | string | Human-readable display name. |
+| `components` | array | List of component objects (the graph nodes). Must contain at least one component. |
+| `connections` | array | List of connection objects (the graph edges). May be empty if connectivity is fully described by component `inputs`/`outputs`. |
+
+### 4.2 Optional Top-Level Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `description` | string | Free-text description of the architecture. |
+| `category` | string | Domain category (e.g. `"Computer Vision"`, `"NLP"`, `"Recommendation"`). |
+| `icon` | string | Emoji or icon name for UI display. |
+| `real_param_count` | integer | Real-world parameter count (for evaluation/cross-check). |
+| `block_templates` | array | Reusable subgraph definitions. See [§25](/specification/block-templates#25-block-templates-and-repetition). |
+| `metadata` | object | Arbitrary vendor-specific metadata. See [§9](/specification/metadata-and-provenance#9-metadata). |
+| `provenance` | object | Origin information. See [§10](/specification/metadata-and-provenance#10-provenance). |
+
+### 4.3 Extension Fields
+
+Any top-level field not listed above **MUST** be preserved by conforming consumers. Unknown fields **MUST NOT** cause parsing failure. This enables vendors to embed custom metadata without forking the spec.
+
+> **For Implementers:** Use a JSON parser that preserves unknown fields (e.g. serde's `#[serde(flatten)]` in Rust, `**kwargs` in Python). Never use a strict schema that drops unknown keys.
+
+## 5. Component (Node)
+
+A component is a single node in the architecture graph. It represents one operator instance with concrete parameters.
+
+```json
+{
+  "id": "n3",
+  "type": "multiHeadAttention",
+  "name": "Attention_1",
+  "params": {
+    "numHeads": 12,
+    "hiddenDim": 768
+  },
+  "inputs": ["n2"],
+  "outputs": ["n4"],
+  "scope": "layer.0.attention"
+}
+```
+
+### 5.1 Required Component Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique component identifier within the document. Must be referenced by at least one connection or by another component's `inputs`/`outputs`. |
+| `type` | string | Operator type identifier. See [§7](/specification/operator-registry#7-operator-type-registry) for the operator type registry. |
+| `name` | string | Human-readable display name for this instance. |
+| `params` | object | Parameter key-value map. May be empty `{}`. See [§6](/specification/document-structure#6-parameters). |
+| `inputs` | array of strings | IDs of components that feed into this component. May be empty for input/source nodes. |
+| `outputs` | array of strings | IDs of components this component feeds into. May be empty for output/sink nodes. |
+
+### 5.2 Optional Component Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `scope` | string | Hierarchical scope path using dot notation (e.g. `"layer.0.attention"`, `"encoder.block.1.ffn"`). Enables grouping and hierarchical analysis. See [§12](/specification/graph-model#12-scope-notation). |
+| `position` | object | Visual layout position `{ "x": number, "y": number }`. Rendering hint only; has no architectural semantics. |
+| `input_shape` | array | Declared input tensor shape (e.g. `[1, 512, 768]`). May contain symbolic strings (e.g. `["batch", "seq_len", 768]`). |
+| `notes` | string | Free-text annotation for this component. |
+| `repeat` | object | Repetition directive: expand this component into N copies. See [§25.4](/specification/block-templates#254-repeat-directive). |
+| `block_ref` | string | Reference to a block template by `id`. See [§25.3](/specification/block-templates#253-block-reference-components). |
+
+### 5.3 Extension Fields
+
+Any component field not listed above **MUST** be preserved by conforming consumers.
+
+### 5.4 Component ID Rules
+
+- IDs must be unique within a document.
+- IDs should be short and stable (e.g. `"n1"`, `"n2"`, `"embed"`, `"attn_1"`).
+- IDs must not contain whitespace or the `.` character (reserved for scope notation).
+- Renumbering IDs is a valid transformation; consumers must follow references, not positions.
+
+> **For Implementers:** The `.` character is reserved because expanded block-template node IDs use dot notation (e.g. `layer_0.attn`). If you encounter a `.` in an ID, it likely comes from block expansion — see [§25.3](/specification/block-templates#253-block-reference-components).
+
+## 6. Parameters
+
+Parameters describe the concrete configuration of a component. They are architectural configuration, **not** runtime weights.
+
+### 6.1 Parameter Value Types
+
+A parameter value may be any of the following JSON types:
+
+| JSON Type | Example | Semantic Meaning |
+|-----------|---------|------------------|
+| integer | `768` | A scalar integer (e.g. `hiddenDim`, `numHeads`, `vocabSize`). |
+| float | `0.02` | A scalar floating-point number (e.g. dropout rate, scaling factor). |
+| boolean | `true` | A boolean flag (e.g. `bias`, `residual`). |
+| string | `"gelu"` | An enumeration or named choice (e.g. activation function name). |
+| array | `[3, 224, 224]` | A tensor shape or multi-dimensional value (e.g. `kernelSize`, `shape`). Array elements may be integers or strings (symbolic dimensions). |
+
+### 6.2 Symbolic Dimensions
+
+Array parameters may contain string elements to represent symbolic (dynamic) dimensions:
+
+```json
+"params": {
+  "shape": ["batch", "seq_len", 768]
+}
+```
+
+Consumers should treat string elements as symbolic identifiers and integer elements as fixed dimensions.
+
+### 6.3 Parameter Naming Conventions
+
+NAXS does not enforce a parameter naming convention. Parameter names are operator-type-specific. However, the following conventions are **recommended** for consistency:
+
+| Convention | Examples |
+|------------|----------|
+| camelCase | `numHeads`, `hiddenDim`, `embeddingDim`, `kernelSize` |
+| Descriptive | `vocabSize`, `inChannels`, `outChannels`, `ffDim` |
+| Boolean flags | `bias`, `residual`, `training` |
+
+A registry of standard parameter names per operator type is provided in [§7](/specification/operator-registry#7-operator-type-registry) and [Appendix A](/specification/appendices#appendix-a-standard-parameter-name-catalog).
+
+### 6.4 Parameters vs. Weights
+
+Parameters are **architectural configuration**: they define the shape and behavior of the operator. Examples: `numHeads=12`, `hiddenDim=768`, `kernelSize=3`.
+
+Weights are **trained values**: they are the learned parameters of the model. Examples: attention weight matrices, embedding lookup tables, convolution filters.
+
+NAXS documents **MUST NOT** contain weight values. Weight references (e.g. checkpoint paths) may appear in `metadata` but are not part of the architecture specification.

@@ -1,0 +1,68 @@
+---
+title: Community
+description: Contribute to NAXS — feedback, specification changes, and operator type registration.
+---
+
+# Community
+
+NAXS is developed in the open by the [neuroarchitectures](https://github.com/neuroarchitectures) organization. The specification is in **Draft for Public Review**, and community participation shapes every revision.
+
+## Ways to contribute
+
+<CardGroup cols={3}>
+  <Card title="Report issues" icon="bug">
+    Ambiguities, contradictions, or gaps in the specification. Use the *Specification feedback* issue template.
+  </Card>
+  <Card title="Propose changes" icon="git-pull-request">
+    Clarifications, better examples, and schema improvements via pull requests against `specification.md`.
+  </Card>
+  <Card title="Register operator types" icon="puzzle">
+    New entries for the standard registry (§7) — from axial attention to novel SSM variants.
+  </Card>
+</CardGroup>
+
+## Where things live
+
+| Repository | Contents |
+|------------|----------|
+| [neuroarchitectures/naxs](https://github.com/neuroarchitectures/naxs) | The specification (`specification.md`), JSON Schema, example documents, and the `pynaxs` reference validator |
+| [neuroarchitectures/neuroarchitectures.github.io](https://github.com/neuroarchitectures/neuroarchitectures.github.io) | This website (Mintlify, deployed via GitHub Pages) |
+| [neuroarchitectures/.github](https://github.com/neuroarchitectures/.github) | Organization profile |
+
+## How to propose a specification change
+
+1. Read the [specification](/specification/introduction) and search [existing issues](https://github.com/neuroarchitectures/naxs/issues) to avoid duplicates.
+2. Open an issue with the **Specification feedback** template describing the problem and your proposal.
+3. For accepted changes, fork the repository and branch from `main`.
+4. Update `specification.md` — and `naxs/v1.0/schema.json` plus `pynaxs` if validation behavior is affected.
+5. Ensure the validator test suite passes:
+
+   ```bash
+   cd pynaxs && pip install -e . && python -m pytest tests/
+   ```
+
+6. Open a pull request referencing the related issue.
+
+Full details are in [CONTRIBUTING.md](https://github.com/neuroarchitectures/naxs/blob/main/CONTRIBUTING.md).
+
+## Registering a new operator type
+
+The operator type registry grows through community proposals (per §11.2 of the specification):
+
+1. Define the type **name** (camelCase), **description**, expected **parameters**, and input/output **arity**.
+2. Provide **at least 3 real-world architecture examples** that use the type.
+3. Open an issue with the **Register an operator type** template.
+4. If accepted, the type ships in the next minor version of the spec.
+
+## Governance
+
+- **Major** versions (1.0 → 2.0): breaking changes to required fields or semantics — require broad consensus.
+- **Minor** versions (1.0 → 1.1): new optional fields, operator types, and standard metadata keys.
+- **Patch** versions: clarifications, documentation fixes, and schema corrections.
+
+## License
+
+- Specification text: **CC-BY-4.0**
+- JSON Schema, examples, and `pynaxs`: **Apache-2.0**
+
+By contributing, you agree that your contributions will be licensed under these terms.

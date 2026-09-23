@@ -1,0 +1,836 @@
+---
+title: Examples
+description: Six annotated NAXS documents — from a minimal MLP to a nested-block Llama.
+---
+
+# Examples gallery
+
+Every document below is a complete, valid NAXS 1.0 file. They also live in the spec repository under [`naxs/v1.0/examples/`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/examples) — the canonical copies used by the `pynaxs` test suite.
+
+| Document | Demonstrates | Size |
+|----------|--------------|------|
+| [`minimal_mlp.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/examples/minimal_mlp.json) | Smallest valid document | 2 components |
+| [`symbolic_shape.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/examples/symbolic_shape.json) | Symbolic / dynamic dimensions | 3 components |
+| [`vendor_custom.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/examples/vendor_custom.json) | Custom operators + vendor metadata | 3 components |
+| [`bert_base_repetition.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/examples/bert_base_repetition.json) | 12-layer transformer via block templates | 5 components |
+| [`resnet_repetition.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/examples/resnet_repetition.json) | 4-stage ResNet via repeat directives | 10 components |
+| [`nested_blocks_llama.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/examples/nested_blocks_llama.json) | Nested block templates + derived params | 6 components |
+
+Expand a card to read the full document.
+
+<Accordion title="Minimal MLP">
+
+The smallest valid NAXS document — a one-layer MLP mapping a 10-dimensional input to 5 outputs. Everything required by §13, nothing more.
+
+```json minimal_mlp.json
+{
+  "spec_version": "1.0",
+  "id": "minimal-mlp",
+  "name": "Minimal MLP",
+  "description": "The smallest valid NAXS document: a single linear layer.",
+  "components": [
+    {
+      "id": "n1",
+      "type": "input",
+      "name": "x",
+      "params": { "shape": [10] },
+      "inputs": [],
+      "outputs": ["n2"]
+    },
+    {
+      "id": "n2",
+      "type": "linear",
+      "name": "fc1",
+      "params": { "inFeatures": 10, "outFeatures": 5 },
+      "inputs": ["n1"],
+      "outputs": []
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "n1",
+      "to": "n2",
+      "fromPort": "bottom",
+      "toPort": "top"
+    }
+  ]
+}
+```
+
+</Accordion>
+
+<Accordion title="Symbolic Shape">
+
+Dynamic dimensions — array parameters may contain string elements (e.g. `"batch"`, `"seq_len"`) representing symbolic dimensions (§6.2).
+
+```json symbolic_shape.json
+{
+  "spec_version": "1.0",
+  "id": "symbolic-shape-example",
+  "name": "Symbolic Shape Example",
+  "description": "Demonstrates symbolic (dynamic) dimensions in tensor shapes.",
+  "components": [
+    {
+      "id": "n1",
+      "type": "input",
+      "name": "Variable-Length Input",
+      "params": { "shape": ["batch", "seq_len", 768] },
+      "inputs": [],
+      "outputs": ["n2"],
+      "inputShape": ["batch", "seq_len", 768]
+    },
+    {
+      "id": "n2",
+      "type": "multiHeadAttention",
+      "name": "Self-Attention",
+      "params": {
+        "numHeads": 12,
+        "hiddenDim": 768
+      },
+      "inputs": ["n1"],
+      "outputs": ["n3"],
+      "scope": "layer.0.attention"
+    },
+    {
+      "id": "n3",
+      "type": "output",
+      "name": "Output",
+      "params": {},
+      "inputs": ["n2"],
+      "outputs": []
+    }
+  ],
+  "connections": [
+    { "id": "c1", "from": "n1", "to": "n2" },
+    { "id": "c2", "from": "n2", "to": "n3" }
+  ]
+}
+```
+
+</Accordion>
+
+<Accordion title="Vendor Custom Operators">
+
+Custom operator types and vendor metadata — unknown types and fields are preserved, never rejected (§7.2, §9).
+
+```json vendor_custom.json
+{
+  "spec_version": "1.0",
+  "id": "vendor-custom-arch",
+  "name": "Vendor Custom Architecture",
+  "description": "Demonstrates custom operator types, vendor metadata, and provenance.",
+  "category": "Custom",
+  "components": [
+    {
+      "id": "n1",
+      "type": "input",
+      "name": "Sensor Data",
+      "params": { "shape": ["batch", 128, 6] },
+      "inputs": [],
+      "outputs": ["n2"]
+    },
+    {
+      "id": "n2",
+      "type": "custom",
+      "name": "Acme Temporal Feature Extractor",
+      "params": {
+        "windowSize": 16,
+        "stride": 2,
+        "featureDim": 256
+      },
+      "inputs": ["n1"],
+      "outputs": ["n3"],
+      "scope": "feature_extraction",
+      "notes": "Vendor-specific temporal feature extractor with learned windowed attention."
+    },
+    {
+      "id": "n3",
+      "type": "linear",
+      "name": "classifier",
+      "params": { "inFeatures": 256, "outFeatures": 10, "bias": true },
+      "inputs": ["n2"],
+      "outputs": []
+    }
+  ],
+  "connections": [
+    { "id": "c1", "from": "n1", "to": "n2", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c2", "from": "n2", "to": "n3", "fromPort": "bottom", "toPort": "top" }
+  ],
+  "metadata": {
+    "framework": "custom",
+    "framework_version": "1.0.0",
+    "vendor": "Acme Corp",
+    "license": "proprietary",
+    "tags": ["temporal", "sensor", "custom-op"],
+    "vendor:checkpoint": "s3://acme-models/temporal-v2.pt"
+  },
+  "provenance": {
+    "source": "internal://acme/temporal-arch-v2.json",
+    "imported_at": "2026-09-23T12:00:00Z",
+    "imported_by": "acme-importer v1.2.0",
+    "original_format": "manual"
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="BERT-Base via Block Templates">
+
+The flagship compression demo — a 12-layer transformer encoder expressed with a single block template and one `repeat` directive, 7 components instead of 51 (§25.8).
+
+```json bert_base_repetition.json
+{
+  "$schema": "https://raw.githubusercontent.com/neuroarchitectures/naxs/main/naxs/v1.0/schema.json",
+  "spec_version": "1.0",
+  "id": "bert-base-repetition",
+  "name": "BERT-Base (with Block Templates)",
+  "description": "BERT-Base represented with a single block template and a repeat directive. 5 components expand to the same 51-component graph as the NAXS 1.0 BERT-Base example.",
+  "category": "NLP",
+  "block_templates": [
+    {
+      "id": "transformer_encoder_layer",
+      "description": "Standard transformer encoder layer: attention → residual add → LayerNorm → FFN → residual add → LayerNorm",
+      "params": {
+        "hiddenDim": { "type": "integer", "description": "Hidden dimension size" },
+        "numHeads": { "type": "integer", "description": "Number of attention heads" },
+        "ffDim": { "type": "integer", "description": "Feed-forward intermediate dimension" }
+      },
+      "nodes": [
+        {
+          "id": "attn",
+          "type": "multiHeadAttention",
+          "name": "Attention",
+          "params": {
+            "numHeads": "$numHeads",
+            "hiddenDim": "$hiddenDim"
+          }
+        },
+        {
+          "id": "add1",
+          "type": "add",
+          "name": "ResidualAdd1",
+          "params": {}
+        },
+        {
+          "id": "ln1",
+          "type": "layerNorm",
+          "name": "LayerNorm1",
+          "params": {
+            "normalizedShape": "$hiddenDim"
+          }
+        },
+        {
+          "id": "ffn",
+          "type": "feedForward",
+          "name": "FFN",
+          "params": {
+            "hiddenDim": "$hiddenDim",
+            "ffDim": "$ffDim"
+          }
+        },
+        {
+          "id": "add2",
+          "type": "add",
+          "name": "ResidualAdd2",
+          "params": {}
+        },
+        {
+          "id": "ln2",
+          "type": "layerNorm",
+          "name": "LayerNorm2",
+          "params": {
+            "normalizedShape": "$hiddenDim"
+          }
+        }
+      ],
+      "edges": [
+        { "from": "attn", "to": "add1" },
+        { "from": "add1", "to": "ln1" },
+        { "from": "ln1", "to": "ffn" },
+        { "from": "ffn", "to": "add2" },
+        { "from": "add2", "to": "ln2" }
+      ],
+      "interface": {
+        "inputs": [
+          { "name": "x", "description": "Input tensor [batch, seq, hiddenDim]" }
+        ],
+        "outputs": [
+          { "name": "y", "source_node": "ln2", "description": "Output tensor [batch, seq, hiddenDim]" }
+        ]
+      }
+    }
+  ],
+  "components": [
+    {
+      "id": "input",
+      "type": "input",
+      "name": "Input",
+      "params": { "shape": [1, 512, 768] },
+      "inputs": [],
+      "outputs": ["embed"],
+      "inputShape": [1, 512, 768]
+    },
+    {
+      "id": "embed",
+      "type": "embedding",
+      "name": "Embedding",
+      "params": {
+        "vocabSize": 30522,
+        "embeddingDim": 768,
+        "maxSeqLen": 512
+      },
+      "inputs": ["input"],
+      "outputs": ["layers"],
+      "scope": "embeddings"
+    },
+    {
+      "id": "layers",
+      "type": "block",
+      "name": "TransformerLayers",
+      "block_ref": "transformer_encoder_layer",
+      "params": {
+        "hiddenDim": 768,
+        "numHeads": 12,
+        "ffDim": 3072
+      },
+      "repeat": {
+        "count": 12,
+        "mode": "sequential"
+      },
+      "inputs": ["embed"],
+      "outputs": ["ln_f"],
+      "scope": "encoder.layer.$i"
+    },
+    {
+      "id": "ln_f",
+      "type": "layerNorm",
+      "name": "FinalLayerNorm",
+      "params": { "normalizedShape": 768 },
+      "inputs": ["layers"],
+      "outputs": ["output"],
+      "scope": "encoder"
+    },
+    {
+      "id": "output",
+      "type": "output",
+      "name": "Output",
+      "params": {},
+      "inputs": ["ln_f"],
+      "outputs": []
+    }
+  ],
+  "connections": [
+    { "id": "c1", "from": "input", "to": "embed", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c2", "from": "embed", "to": "layers", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c3", "from": "layers", "to": "ln_f", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c4", "from": "ln_f", "to": "output", "fromPort": "bottom", "toPort": "top" }
+  ],
+  "metadata": {
+    "framework": "pytorch",
+    "paper": "https://arxiv.org/abs/1810.04805",
+    "checkpoint": "https://huggingface.co/bert-base-uncased",
+    "license": "apache-2.0",
+    "expanded_component_count": 51,
+    "compressed_component_count": 5
+  },
+  "provenance": {
+    "source": "atlas/architectures/bert-base/model.json",
+    "original_format": "atlas-model-json",
+    "imported_by": "manual",
+    "transformations": [
+      {
+        "operation": "extract_block_template",
+        "description": "Extracted transformer_encoder_layer template from 12 repeated layers"
+      }
+    ]
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="ResNet-50 via Repeat Directives">
+
+A 4-stage ResNet using `repeat` with per-instance `overrides` where stage parameters vary (§25.4, §25.6).
+
+```json resnet_repetition.json
+{
+  "$schema": "https://raw.githubusercontent.com/neuroarchitectures/naxs/main/naxs/v1.0/schema.json",
+  "spec_version": "1.0",
+  "id": "resnet-50-repetition",
+  "name": "ResNet-50 (with Block Templates)",
+  "description": "ResNet-50 represented with block templates. Shows per-instance parameter overrides for stages with different channel counts and block repetitions.",
+  "category": "Computer Vision",
+  "block_templates": [
+    {
+      "id": "bottleneck_block",
+      "description": "Bottleneck residual block: 1x1 conv → 3x3 conv → 1x1 conv, with residual skip connection",
+      "params": {
+        "inChannels": { "type": "integer", "description": "Input channel count" },
+        "midChannels": { "type": "integer", "description": "Bottleneck (mid) channel count" },
+        "outChannels": { "type": "integer", "description": "Output channel count" },
+        "stride": { "type": "integer", "description": "Stride for the 3x3 conv" }
+      },
+      "nodes": [
+        {
+          "id": "conv1",
+          "type": "conv2d",
+          "name": "Conv1x1",
+          "params": {
+            "inChannels": "$inChannels",
+            "outChannels": "$midChannels",
+            "kernelSize": 1,
+            "stride": 1
+          }
+        },
+        {
+          "id": "bn1",
+          "type": "batchNorm",
+          "name": "BN1",
+          "params": { "numFeatures": "$midChannels" }
+        },
+        {
+          "id": "conv2",
+          "type": "conv2d",
+          "name": "Conv3x3",
+          "params": {
+            "inChannels": "$midChannels",
+            "outChannels": "$midChannels",
+            "kernelSize": 3,
+            "stride": "$stride",
+            "padding": 1
+          }
+        },
+        {
+          "id": "bn2",
+          "type": "batchNorm",
+          "name": "BN2",
+          "params": { "numFeatures": "$midChannels" }
+        },
+        {
+          "id": "conv3",
+          "type": "conv2d",
+          "name": "Conv1x1_proj",
+          "params": {
+            "inChannels": "$midChannels",
+            "outChannels": "$outChannels",
+            "kernelSize": 1,
+            "stride": 1
+          }
+        },
+        {
+          "id": "bn3",
+          "type": "batchNorm",
+          "name": "BN3",
+          "params": { "numFeatures": "$outChannels" }
+        },
+        {
+          "id": "add",
+          "type": "add",
+          "name": "ResidualAdd",
+          "params": {}
+        }
+      ],
+      "edges": [
+        { "from": "conv1", "to": "bn1" },
+        { "from": "bn1", "to": "conv2" },
+        { "from": "conv2", "to": "bn2" },
+        { "from": "bn2", "to": "conv3" },
+        { "from": "conv3", "to": "bn3" },
+        { "from": "bn3", "to": "add" }
+      ],
+      "interface": {
+        "inputs": [
+          { "name": "x", "description": "Input feature map" }
+        ],
+        "outputs": [
+          { "name": "y", "source_node": "add", "description": "Output feature map" }
+        ]
+      }
+    }
+  ],
+  "components": [
+    {
+      "id": "input",
+      "type": "input",
+      "name": "Input",
+      "params": { "shape": [1, 3, 224, 224] },
+      "inputs": [],
+      "outputs": ["stem_conv"]
+    },
+    {
+      "id": "stem_conv",
+      "type": "conv2d",
+      "name": "StemConv",
+      "params": { "inChannels": 3, "outChannels": 64, "kernelSize": 7, "stride": 2, "padding": 3 },
+      "inputs": ["input"],
+      "outputs": ["stem_bn"],
+      "scope": "stem"
+    },
+    {
+      "id": "stem_bn",
+      "type": "batchNorm",
+      "name": "StemBN",
+      "params": { "numFeatures": 64 },
+      "inputs": ["stem_conv"],
+      "outputs": ["stage1"],
+      "scope": "stem"
+    },
+    {
+      "id": "stage1",
+      "type": "block",
+      "name": "Stage1_Bottlenecks",
+      "block_ref": "bottleneck_block",
+      "params": {
+        "inChannels": 64,
+        "midChannels": 64,
+        "outChannels": 256,
+        "stride": 1
+      },
+      "repeat": { "count": 3, "mode": "sequential" },
+      "inputs": ["stem_bn"],
+      "outputs": ["stage2"],
+      "scope": "stage1.block.$i"
+    },
+    {
+      "id": "stage2",
+      "type": "block",
+      "name": "Stage2_Bottlenecks",
+      "block_ref": "bottleneck_block",
+      "params": {
+        "inChannels": 256,
+        "midChannels": 128,
+        "outChannels": 512,
+        "stride": 2
+      },
+      "repeat": { "count": 4, "mode": "sequential" },
+      "inputs": ["stage1"],
+      "outputs": ["stage3"],
+      "scope": "stage2.block.$i"
+    },
+    {
+      "id": "stage3",
+      "type": "block",
+      "name": "Stage3_Bottlenecks",
+      "block_ref": "bottleneck_block",
+      "params": {
+        "inChannels": 512,
+        "midChannels": 256,
+        "outChannels": 1024,
+        "stride": 2
+      },
+      "repeat": { "count": 6, "mode": "sequential" },
+      "inputs": ["stage2"],
+      "outputs": ["stage4"],
+      "scope": "stage3.block.$i"
+    },
+    {
+      "id": "stage4",
+      "type": "block",
+      "name": "Stage4_Bottlenecks",
+      "block_ref": "bottleneck_block",
+      "params": {
+        "inChannels": 1024,
+        "midChannels": 512,
+        "outChannels": 2048,
+        "stride": 2
+      },
+      "repeat": { "count": 3, "mode": "sequential" },
+      "inputs": ["stage3"],
+      "outputs": ["pool"],
+      "scope": "stage4.block.$i"
+    },
+    {
+      "id": "pool",
+      "type": "custom",
+      "name": "GlobalAvgPool",
+      "params": { "mode": "avg", "spatial": true },
+      "inputs": ["stage4"],
+      "outputs": ["fc"],
+      "scope": "head"
+    },
+    {
+      "id": "fc",
+      "type": "linear",
+      "name": "FC",
+      "params": { "inFeatures": 2048, "outFeatures": 1000 },
+      "inputs": ["pool"],
+      "outputs": ["output"],
+      "scope": "head"
+    },
+    {
+      "id": "output",
+      "type": "output",
+      "name": "Output",
+      "params": {},
+      "inputs": ["fc"],
+      "outputs": []
+    }
+  ],
+  "connections": [
+    { "id": "c1", "from": "input", "to": "stem_conv", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c2", "from": "stem_conv", "to": "stem_bn", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c3", "from": "stem_bn", "to": "stage1", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c4", "from": "stage1", "to": "stage2", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c5", "from": "stage2", "to": "stage3", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c6", "from": "stage3", "to": "stage4", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c7", "from": "stage4", "to": "pool", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c8", "from": "pool", "to": "fc", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c9", "from": "fc", "to": "output", "fromPort": "bottom", "toPort": "top" }
+  ],
+  "metadata": {
+    "framework": "pytorch",
+    "paper": "https://arxiv.org/abs/1512.03385",
+    "license": "mit",
+    "expanded_component_count": 176,
+    "compressed_component_count": 10,
+    "repetition_summary": {
+      "stage1": "3 × bottleneck_block",
+      "stage2": "4 × bottleneck_block",
+      "stage3": "6 × bottleneck_block",
+      "stage4": "3 × bottleneck_block",
+      "total_repeated_blocks": 16
+    }
+  },
+  "provenance": {
+    "source": "atlas/architectures/resnet-50/model.json",
+    "original_format": "atlas-model-json",
+    "imported_by": "manual"
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="Nested Block Templates">
+
+A Llama-style architecture with nested block templates and derived parameters via `$expr` expressions (§25.5, §25.7).
+
+```json nested_blocks_llama.json
+{
+  "$schema": "https://raw.githubusercontent.com/neuroarchitectures/naxs/main/naxs/v1.0/schema.json",
+  "spec_version": "1.0",
+  "id": "llama-style-repetition",
+  "name": "Llama-Style (Nested Blocks + Expr Params)",
+  "description": "Demonstrates nested block templates, expression-based parameter derivation ($expr), and per-instance overrides. A transformer decoder with RMSNorm, GQA, SwiGLU FFN, and RoPE.",
+  "category": "NLP",
+  "block_templates": [
+    {
+      "id": "rmsnorm_attn",
+      "description": "RMSNorm + Grouped-Query Attention sub-block",
+      "params": {
+        "hiddenDim": { "type": "integer" },
+        "numHeads": { "type": "integer" },
+        "numKVHeads": { "type": "integer" }
+      },
+      "nodes": [
+        {
+          "id": "norm",
+          "type": "rmsNorm",
+          "name": "AttnNorm",
+          "params": { "normalizedShape": "$hiddenDim" }
+        },
+        {
+          "id": "attn",
+          "type": "groupedQueryAttention",
+          "name": "GQA",
+          "params": {
+            "embedDim": "$hiddenDim",
+            "numHeads": "$numHeads",
+            "numKVHeads": "$numKVHeads",
+            "headDim": { "$expr": "hiddenDim / numHeads" }
+          }
+        },
+        {
+          "id": "add",
+          "type": "add",
+          "name": "AttnResidual",
+          "params": {}
+        }
+      ],
+      "edges": [
+        { "from": "norm", "to": "attn" },
+        { "from": "attn", "to": "add" }
+      ],
+      "interface": {
+        "inputs": [{ "name": "x" }],
+        "outputs": [{ "name": "y", "source_node": "add" }]
+      }
+    },
+    {
+      "id": "rmsnorm_ffn",
+      "description": "RMSNorm + SwiGLU FFN sub-block",
+      "params": {
+        "hiddenDim": { "type": "integer" },
+        "intermediateSize": { "type": "integer" }
+      },
+      "nodes": [
+        {
+          "id": "norm",
+          "type": "rmsNorm",
+          "name": "FFNNorm",
+          "params": { "normalizedShape": "$hiddenDim" }
+        },
+        {
+          "id": "ffn",
+          "type": "swiglu",
+          "name": "SwiGLU",
+          "params": {
+            "dim": "$hiddenDim",
+            "intermediateSize": "$intermediateSize"
+          }
+        },
+        {
+          "id": "add",
+          "type": "add",
+          "name": "FFNResidual",
+          "params": {}
+        }
+      ],
+      "edges": [
+        { "from": "norm", "to": "ffn" },
+        { "from": "ffn", "to": "add" }
+      ],
+      "interface": {
+        "inputs": [{ "name": "x" }],
+        "outputs": [{ "name": "y", "source_node": "add" }]
+      }
+    },
+    {
+      "id": "decoder_layer",
+      "description": "Full transformer decoder layer: attention sub-block + FFN sub-block (nested block templates)",
+      "params": {
+        "hiddenDim": { "type": "integer" },
+        "numHeads": { "type": "integer" },
+        "numKVHeads": { "type": "integer" },
+        "intermediateSize": { "type": "integer" }
+      },
+      "nodes": [
+        {
+          "id": "attn_block",
+          "type": "block",
+          "block_ref": "rmsnorm_attn",
+          "params": {
+            "hiddenDim": "$hiddenDim",
+            "numHeads": "$numHeads",
+            "numKVHeads": "$numKVHeads"
+          }
+        },
+        {
+          "id": "ffn_block",
+          "type": "block",
+          "block_ref": "rmsnorm_ffn",
+          "params": {
+            "hiddenDim": "$hiddenDim",
+            "intermediateSize": "$intermediateSize"
+          }
+        }
+      ],
+      "edges": [
+        { "from": "attn_block", "to": "ffn_block" }
+      ],
+      "interface": {
+        "inputs": [{ "name": "x" }],
+        "outputs": [{ "name": "y", "source_node": "ffn_block" }]
+      }
+    }
+  ],
+  "components": [
+    {
+      "id": "input",
+      "type": "input",
+      "name": "Input",
+      "params": { "shape": ["batch", "seq_len", 4096] },
+      "inputs": [],
+      "outputs": ["embed"]
+    },
+    {
+      "id": "embed",
+      "type": "embedding",
+      "name": "TokenEmbedding",
+      "params": { "vocabSize": 128256, "embeddingDim": 4096 },
+      "inputs": ["input"],
+      "outputs": ["layers"],
+      "scope": "embeddings"
+    },
+    {
+      "id": "layers",
+      "type": "block",
+      "name": "DecoderLayers",
+      "block_ref": "decoder_layer",
+      "params": {
+        "hiddenDim": 4096,
+        "numHeads": 32,
+        "numKVHeads": 8,
+        "intermediateSize": 14336
+      },
+      "repeat": {
+        "count": 32,
+        "mode": "sequential",
+        "overrides": [
+          { "index": 0, "params": { "numHeads": 32 } }
+        ]
+      },
+      "inputs": ["embed"],
+      "outputs": ["norm_f"],
+      "scope": "decoder.layer.$i"
+    },
+    {
+      "id": "norm_f",
+      "type": "rmsNorm",
+      "name": "FinalNorm",
+      "params": { "normalizedShape": 4096 },
+      "inputs": ["layers"],
+      "outputs": ["lm_head"],
+      "scope": "decoder"
+    },
+    {
+      "id": "lm_head",
+      "type": "linear",
+      "name": "LMHead",
+      "params": { "inFeatures": 4096, "outFeatures": 128256, "bias": false },
+      "inputs": ["norm_f"],
+      "outputs": ["output"],
+      "scope": "head"
+    },
+    {
+      "id": "output",
+      "type": "output",
+      "name": "Output",
+      "params": {},
+      "inputs": ["lm_head"],
+      "outputs": []
+    }
+  ],
+  "connections": [
+    { "id": "c1", "from": "input", "to": "embed", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c2", "from": "embed", "to": "layers", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c3", "from": "layers", "to": "norm_f", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c4", "from": "norm_f", "to": "lm_head", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c5", "from": "lm_head", "to": "output", "fromPort": "bottom", "toPort": "top" }
+  ],
+  "metadata": {
+    "framework": "pytorch",
+    "features": [
+      "nested_block_templates",
+      "expression_params",
+      "per_instance_overrides",
+      "symbolic_dimensions"
+    ],
+    "expanded_component_count": 197,
+    "compressed_component_count": 6,
+    "block_template_hierarchy": {
+      "decoder_layer": ["rmsnorm_attn", "rmsnorm_ffn"]
+    }
+  },
+  "provenance": {
+    "source": "derived from atlas/architectures/llama3-8b/model.json",
+    "original_format": "atlas-model-json",
+    "imported_by": "manual"
+  }
+}
+```
+
+</Accordion>

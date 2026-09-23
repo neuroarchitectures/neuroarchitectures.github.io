@@ -1,0 +1,441 @@
+---
+title: Annotated Examples
+description: Complete NAXS documents — minimal MLP, BERT-Base, ResNet-50, Llama-3-8B, Mamba, and 3D Gaussian Splatting.
+---
+
+# 14. Minimal Example
+
+The smallest valid NAXS document:
+
+```json
+{
+  "spec_version": "1.0",
+  "id": "minimal-mlp",
+  "name": "Minimal MLP",
+  "components": [
+    {
+      "id": "n1",
+      "type": "input",
+      "name": "x",
+      "params": { "shape": [10] },
+      "inputs": [],
+      "outputs": ["n2"]
+    },
+    {
+      "id": "n2",
+      "type": "linear",
+      "name": "fc1",
+      "params": { "inFeatures": 10, "outFeatures": 5 },
+      "inputs": ["n1"],
+      "outputs": []
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "n1",
+      "to": "n2",
+      "fromPort": "bottom",
+      "toPort": "top"
+    }
+  ]
+}
+```
+
+## 15. Full Example: BERT-Base (Excerpt)
+
+```json
+{
+  "spec_version": "1.0",
+  "id": "bert-base",
+  "name": "BERT-Base",
+  "description": "BERT-Base: 12-layer transformer encoder, hidden size 768, 12 attention heads.",
+  "category": "NLP",
+  "components": [
+    {
+      "id": "n1",
+      "type": "input",
+      "name": "Input",
+      "params": { "shape": [1, 512, 768] },
+      "inputs": [],
+      "outputs": ["n2"],
+      "inputShape": [1, 512, 768]
+    },
+    {
+      "id": "n2",
+      "type": "embedding",
+      "name": "Embedding",
+      "params": {
+        "vocabSize": 30522,
+        "embeddingDim": 768,
+        "maxSeqLen": 512
+      },
+      "inputs": ["n1"],
+      "outputs": ["n3", "n4"],
+      "scope": "embeddings"
+    },
+    {
+      "id": "n3",
+      "type": "multiHeadAttention",
+      "name": "Attention_1",
+      "params": {
+        "numHeads": 12,
+        "hiddenDim": 768
+      },
+      "inputs": ["n2"],
+      "outputs": ["n4"],
+      "scope": "layer.0.attention"
+    },
+    {
+      "id": "n4",
+      "type": "add",
+      "name": "Add_1",
+      "params": {},
+      "inputs": ["n2", "n3"],
+      "outputs": ["n5"],
+      "scope": "layer.0.attention"
+    },
+    {
+      "id": "n5",
+      "type": "layerNorm",
+      "name": "LayerNorm_1_1",
+      "params": { "normalizedShape": 768 },
+      "inputs": ["n4"],
+      "outputs": ["n6"],
+      "scope": "layer.0.attention"
+    },
+    {
+      "id": "n6",
+      "type": "feedForward",
+      "name": "FFN_1",
+      "params": {
+        "hiddenDim": 768,
+        "ffDim": 3072
+      },
+      "inputs": ["n5"],
+      "outputs": ["n7", "n8"],
+      "scope": "layer.0.ffn"
+    }
+  ],
+  "connections": [
+    { "id": "c1", "from": "n1", "to": "n2", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c2", "from": "n2", "to": "n3", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c3", "from": "n2", "to": "n4", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c4", "from": "n3", "to": "n4", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c5", "from": "n4", "to": "n5", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c6", "from": "n5", "to": "n6", "fromPort": "bottom", "toPort": "top" }
+  ],
+  "metadata": {
+    "framework": "pytorch",
+    "paper": "https://arxiv.org/abs/1810.04805",
+    "checkpoint": "https://huggingface.co/bert-base-uncased",
+    "license": "apache-2.0"
+  },
+  "provenance": {
+    "source": "atlas/architectures/bert-base/model.json",
+    "original_format": "atlas-model-json",
+    "imported_by": "manual"
+  }
+}
+```
+
+## 16. Full Example: ResNet-50 (Excerpt)
+
+```json
+{
+  "spec_version": "1.0",
+  "id": "resnet-50",
+  "name": "ResNet-50",
+  "description": "ResNet-50: deep residual CNN with 50 layers, bottleneck blocks.",
+  "category": "Computer Vision",
+  "components": [
+    {
+      "id": "n1",
+      "type": "input",
+      "name": "image",
+      "params": { "shape": [3, 224, 224] },
+      "inputs": [],
+      "outputs": ["n2"]
+    },
+    {
+      "id": "n2",
+      "type": "conv2d",
+      "name": "conv1 7x7/2",
+      "params": {
+        "inChannels": 3,
+        "outChannels": 64,
+        "kernelSize": 7,
+        "stride": 2,
+        "padding": 3
+      },
+      "inputs": ["n1"],
+      "outputs": ["n3"],
+      "scope": "stem"
+    },
+    {
+      "id": "n3",
+      "type": "batchNorm",
+      "name": "bn1",
+      "params": { "numFeatures": 64 },
+      "inputs": ["n2"],
+      "outputs": ["n4"],
+      "scope": "stem"
+    },
+    {
+      "id": "n4",
+      "type": "relu",
+      "name": "relu1",
+      "params": {},
+      "inputs": ["n3"],
+      "outputs": ["n5"],
+      "scope": "stem"
+    }
+  ],
+  "connections": [
+    { "id": "c1", "from": "n1", "to": "n2", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c2", "from": "n2", "to": "n3", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c3", "from": "n3", "to": "n4", "fromPort": "bottom", "toPort": "top" }
+  ]
+}
+```
+
+## 17. Full Example: Llama-3-8B (Excerpt)
+
+```json
+{
+  "spec_version": "1.0",
+  "id": "llama3-8b",
+  "name": "Llama-3-8B",
+  "description": "Llama-3-8B: 32-layer decoder-only transformer with GQA, RoPE, SwiGLU FFN.",
+  "category": "NLP",
+  "components": [
+    {
+      "id": "n1",
+      "type": "input",
+      "name": "Input",
+      "params": { "shape": [1, 8192, 4096] },
+      "inputs": [],
+      "outputs": ["n2"],
+      "inputShape": [1, 8192, 4096]
+    },
+    {
+      "id": "n2",
+      "type": "embedding",
+      "name": "Embedding",
+      "params": {
+        "vocabSize": 128256,
+        "embeddingDim": 4096,
+        "maxSeqLen": 8192
+      },
+      "inputs": ["n1"],
+      "outputs": ["n3", "n5"],
+      "scope": "embeddings"
+    },
+    {
+      "id": "n3",
+      "type": "rmsNorm",
+      "name": "RMSNorm_1_1",
+      "params": { "normalizedShape": 4096 },
+      "inputs": ["n2"],
+      "outputs": ["n4"]
+    },
+    {
+      "id": "n4",
+      "type": "groupedQueryAttention",
+      "name": "Attention_1",
+      "params": {
+        "embedDim": 4096,
+        "numHeads": 32,
+        "numKVHeads": 8,
+        "headDim": 128
+      },
+      "inputs": ["n3"],
+      "outputs": ["n5"],
+      "scope": "layer.0.attention"
+    }
+  ],
+  "connections": [
+    { "id": "c1", "from": "n1", "to": "n2", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c2", "from": "n2", "to": "n3", "fromPort": "bottom", "toPort": "top" },
+    { "id": "c3", "from": "n3", "to": "n4", "fromPort": "bottom", "toPort": "top" }
+  ]
+}
+```
+
+## 18. Full Example: Mamba SSM Block (Excerpt)
+
+Demonstrates non-transformer architecture with SSM, conv1d, and gating:
+
+```json
+{
+  "spec_version": "1.0",
+  "id": "mamba-block",
+  "name": "Mamba SSM Block",
+  "description": "Mamba State Space Model block — selective SSM with causal conv + gating.",
+  "components": [
+    {
+      "id": "input_tokens",
+      "type": "input",
+      "name": "tokens",
+      "params": { "shape": [1, 1024] },
+      "inputs": [],
+      "outputs": ["embed"]
+    },
+    {
+      "id": "embed",
+      "type": "embedding",
+      "name": "embed",
+      "scope": "embeddings",
+      "params": {
+        "numEmbeddings": 50280,
+        "embeddingDim": 1024
+      },
+      "inputs": ["input_tokens"],
+      "outputs": ["norm1", "residual1"],
+      "notes": "Token embedding D=1024 (Mamba-1.4B dim)"
+    },
+    {
+      "id": "norm1",
+      "type": "rmsNorm",
+      "name": "norm_ssm",
+      "scope": "layer.0.ssm",
+      "params": { "normalizedShape": 1024 },
+      "inputs": ["embed"],
+      "outputs": ["in_proj"],
+      "notes": "Pre-SSM RMSNorm"
+    },
+    {
+      "id": "in_proj",
+      "type": "linear",
+      "name": "in_proj",
+      "scope": "layer.0.ssm",
+      "params": {
+        "outFeatures": 4096,
+        "inFeatures": 1024
+      },
+      "inputs": ["norm1"],
+      "outputs": ["causal_conv", "z_gate"],
+      "notes": "Projects to 2x expand (4096) — split into x and z branches"
+    },
+    {
+      "id": "causal_conv",
+      "type": "conv1d",
+      "name": "causal_conv",
+      "scope": "layer.0.ssm",
+      "params": {
+        "outChannels": 2048,
+        "kernelSize": 4,
+        "stride": 1,
+        "padding": 3,
+        "inChannels": 4096
+      },
+      "inputs": ["in_proj"],
+      "outputs": ["silu_x"]
+    },
+    {
+      "id": "silu_x",
+      "type": "swish",
+      "name": "silu_x",
+      "scope": "layer.0.ssm",
+      "params": {},
+      "inputs": ["causal_conv"],
+      "outputs": ["ssm_proj"]
+    },
+    {
+      "id": "z_gate",
+      "type": "swish",
+      "name": "z_gate",
+      "scope": "layer.0.ssm",
+      "params": {},
+      "inputs": ["in_proj"],
+      "outputs": ["gate_multiply"]
+    },
+    {
+      "id": "gate_multiply",
+      "type": "multiply",
+      "name": "gate_out",
+      "scope": "layer.0.ssm",
+      "params": {},
+      "inputs": ["ssm_proj", "z_gate"],
+      "outputs": ["out_proj"],
+      "notes": "Element-wise gate: SSM(x) ⊙ z"
+    }
+  ],
+  "connections": [
+    { "id": "c1", "from": "input_tokens", "to": "embed" },
+    { "id": "c2", "from": "embed", "to": "norm1" },
+    { "id": "c3", "from": "norm1", "to": "in_proj" },
+    { "id": "c4", "from": "in_proj", "to": "causal_conv" },
+    { "id": "c5", "from": "in_proj", "to": "z_gate" },
+    { "id": "c6", "from": "causal_conv", "to": "silu_x" },
+    { "id": "c7", "from": "silu_x", "to": "ssm_proj" },
+    { "id": "c8", "from": "z_gate", "to": "gate_multiply" },
+    { "id": "c9", "from": "ssm_proj", "to": "gate_multiply" }
+  ]
+}
+```
+
+## 19. Full Example: 3D Gaussian Splatting (Custom Operators)
+
+Demonstrates a non-neural-network architecture using `custom` operator types:
+
+```json
+{
+  "spec_version": "1.0",
+  "id": "3dgs",
+  "name": "3D Gaussian Splatting",
+  "description": "Real-time radiance field rendering with 3D Gaussians and tile-based splatting.",
+  "category": "3D Rendering",
+  "components": [
+    {
+      "id": "n1",
+      "type": "input",
+      "name": "SfM Sparse Point Cloud plus Calibrated Cameras",
+      "params": {},
+      "inputs": [],
+      "outputs": ["n2"]
+    },
+    {
+      "id": "n2",
+      "type": "custom",
+      "name": "3D Gaussian Initialization (position, opacity, anisotropic covariance, SH)",
+      "params": {},
+      "inputs": ["n1"],
+      "outputs": ["n3"],
+      "scope": "representation"
+    },
+    {
+      "id": "n3",
+      "type": "custom",
+      "name": "Interleaved Optimization and Adaptive Density Control",
+      "params": {},
+      "inputs": ["n2"],
+      "outputs": ["n4"],
+      "scope": "optimization"
+    },
+    {
+      "id": "n4",
+      "type": "custom",
+      "name": "Visibility-Aware Tile-Based Splatting Rasterizer",
+      "params": {},
+      "inputs": ["n3"],
+      "outputs": ["n5"],
+      "scope": "renderer"
+    },
+    {
+      "id": "n5",
+      "type": "output",
+      "name": "Rendered Image",
+      "params": {},
+      "inputs": ["n4"],
+      "outputs": []
+    }
+  ],
+  "connections": [
+    { "id": "c1", "from": "n1", "to": "n2" },
+    { "id": "c2", "from": "n2", "to": "n3" },
+    { "id": "c3", "from": "n3", "to": "n4" },
+    { "id": "c4", "from": "n4", "to": "n5" }
+  ]
+}
+```

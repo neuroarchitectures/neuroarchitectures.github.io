@@ -1,0 +1,13 @@
+{
+  "name": "neuroarchitectures-docs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Documentation site for Neuroarchitectures — the NAXS open standard, served at https://neuroarchitectures.github.io",
+  "scripts": {
+    "dev": "mintlify dev",
+    "build": "mintlify export --output site.zip"
+  },
+  "devDependencies": {
+    "mintlify": "4.2.922"
+  }
+}

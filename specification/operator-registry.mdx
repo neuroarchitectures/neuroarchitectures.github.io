@@ -1,0 +1,108 @@
+---
+title: Operator Type Registry
+description: The 79 standard operator types — attention, convolution, normalization, MoE, and more.
+---
+
+# 7. Operator Type Registry
+
+NAXS maintains a registry of standard operator types. Each type defines a name, a set of expected parameters, and typical input/output arity.
+
+### 7.1 Standard Operator Types
+
+The following types are recognized in NAXS 1.0. Types not in this list are treated as `custom` — consumers should preserve them but may not interpret their parameters.
+
+#### Core / I/O
+
+| Type | Description | Key Parameters |
+|------|-------------|----------------|
+| `input` | Input source (data source, token stream, image) | `shape` |
+| `output` | Output sink (prediction, representation) | — |
+| `custom` | Vendor-defined or composite operator | (free-form) |
+
+#### Linear / Projection
+
+| Type | Description | Key Parameters |
+|------|-------------|----------------|
+| `linear` | Fully-connected / dense layer | `inFeatures`, `outFeatures`, `bias` |
+| `embedding` | Token / position embedding lookup | `vocabSize`, `embeddingDim`, `maxSeqLen`, `numEmbeddings` |
+| `embed` | Generic embedding (graph, feature) | — |
+
+#### Convolution
+
+| Type | Description | Key Parameters |
+|------|-------------|----------------|
+| `conv2d` | 2D convolution | `inChannels`, `outChannels`, `kernelSize`, `stride`, `padding` |
+| `depthwiseConv2d` | Depthwise separable 2D conv | `inChannels`, `outChannels`, `kernelSize`, `stride`, `padding` |
+| `conv1d` | 1D convolution (audio, temporal) | `inChannels`, `outChannels`, `kernelSize`, `stride`, `padding` |
+| `conv3d` | 3D convolution (video, volumetric) | `inChannels`, `outChannels`, `kernelSize`, `stride`, `padding` |
+| `deformableConv2d` | Deformable 2D convolution | `inChannels`, `outChannels`, `kernelSize` |
+
+#### Attention
+
+| Type | Description | Key Parameters |
+|------|-------------|----------------|
+| `multiHeadAttention` | Multi-head self/cross attention | `numHeads`, `hiddenDim` |
+| `groupedQueryAttention` | Grouped-query attention (GQA) | `embedDim`, `numHeads`, `numKVHeads`, `headDim` |
+| `crossAttention` | Cross-attention between two streams | `numHeads`, `hiddenDim` |
+| `attention` | Generic attention (unspecified variant) | — |
+| `mla` | Multi-head latent attention (DeepSeek MLA) | `kvLatentDim`, `qLatentDim`, `ropeHeadDim` |
+
+#### Normalization
+
+| Type | Description | Key Parameters |
+|------|-------------|----------------|
+| `layerNorm` | Layer normalization | `normalizedShape` |
+| `rmsNorm` | Root mean square normalization | `normalizedShape` |
+| `batchNorm` | Batch normalization | `numFeatures` |
+| `groupNorm` | Group normalization | `numGroups`, `numChannels` |
+
+#### Activation
+
+| Type | Description | Key Parameters |
+|------|-------------|----------------|
+| `relu` | ReLU activation | — |
+| `gelu` | GELU activation | — |
+| `swish` | SiLU / Swish activation | — |
+| `silu` | SiLU activation (alias of `swish`) | — |
+
+#### Feed-Forward / MLP
+
+| Type | Description | Key Parameters |
+|------|-------------|----------------|
+| `feedForward` | Standard feed-forward network | `hiddenDim`, `ffDim` |
+| `ffn` | Generic feed-forward (alias) | — |
+| `swiglu` | SwiGLU FFN | `intermediateSize`, `dim` |
+| `geglu` | GeGLU FFN | `intermediateSize`, `dim` |
+
+#### Structural
+
+| Type | Description | Key Parameters |
+|------|-------------|----------------|
+| `add` | Element-wise addition (residual connection) | — |
+| `residual` | Residual connection wrapper | — |
+| `concatenate` | Tensor concatenation | — |
+| `multiply` | Element-wise multiplication (gating) | — |
+| `transformerBlock` | Composite transformer block | `embedDim`, `numHeads`, `ffDim` |
+
+#### Specialized
+
+| Type | Description | Key Parameters |
+|------|-------------|----------------|
+| `moeLayer` | Mixture of experts layer | `numExperts`, `expertDim`, `topK` |
+| `sharedExpertMoE` | MoE with shared experts | `numExperts`, `expertDim`, `topK`, `numSharedExperts` |
+| `patchEmbed` | Patch embedding (ViT) | `imgSize`, `patchSize`, `embedDim`, `inChans` |
+| `seBlock` | Squeeze-and-excitation block | `channels`, `reduction` |
+| `gcn_conv` | Graph convolution layer | — |
+| `rope` | Rotary position embedding | — |
+
+### 7.2 Custom Operator Types
+
+Vendors MAY define custom operator types by using the `custom` type and providing a `name` that describes the operator. Consumers MUST preserve custom operators but MAY treat them as opaque.
+
+For vendor-specific operators that should be interoperable, vendors SHOULD register new types through the NAXS extension process (see [§11](/specification/metadata-and-provenance#11-extension-model)).
+
+### 7.3 Operator Type Extensibility
+
+New operator types are added through the extension process. The registry is versioned alongside the spec version. Consumers MUST NOT fail when encountering unknown types; they SHOULD treat unknown types as opaque nodes with their parameters preserved.
+
+> **For Implementers:** When you encounter an unknown `type`, do not crash. Store the component as an opaque node with its `params` preserved. Use the `name` field as a human-readable label. This is critical for forward compatibility.

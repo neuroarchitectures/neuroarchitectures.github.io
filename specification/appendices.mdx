@@ -1,0 +1,198 @@
+---
+title: Appendices
+description: Standard parameter name catalog, operator frequency, scope patterns, and implementation notes.
+---
+
+# Appendix A: Standard Parameter Name Catalog
+
+The following parameter names appear across the 288 architectures in the Atlas knowledge base. They are **recommended** (not required) for the indicated operator types.
+
+### Attention Parameters
+
+| Parameter | Type | Used By | Example |
+|-----------|------|---------|---------|
+| `numHeads` | integer | `multiHeadAttention`, `groupedQueryAttention`, `transformerBlock` | `12` |
+| `hiddenDim` | integer | `multiHeadAttention`, `feedForward` | `768` |
+| `embedDim` | integer | `groupedQueryAttention` | `4096` |
+| `numKVHeads` | integer | `groupedQueryAttention` | `8` |
+| `headDim` | integer | `groupedQueryAttention` | `128` |
+| `kvLatentDim` | integer | `mla` | `512` |
+| `qLatentDim` | integer | `mla` | `512` |
+| `ropeHeadDim` | integer | `mla` | `64` |
+
+### Convolution Parameters
+
+| Parameter | Type | Used By | Example |
+|-----------|------|---------|---------|
+| `inChannels` | integer | `conv2d`, `depthwiseConv2d`, `conv1d` | `3` |
+| `outChannels` | integer | `conv2d`, `depthwiseConv2d`, `conv1d` | `64` |
+| `kernelSize` | integer or array | `conv2d`, `depthwiseConv2d`, `conv1d` | `7` or `[3, 3]` |
+| `stride` | integer or array | `conv2d`, `depthwiseConv2d` | `2` |
+| `padding` | integer or array | `conv2d`, `depthwiseConv2d` | `3` |
+
+### Linear Parameters
+
+| Parameter | Type | Used By | Example |
+|-----------|------|---------|---------|
+| `inFeatures` | integer | `linear` | `1024` |
+| `outFeatures` | integer | `linear` | `4096` |
+| `bias` | boolean | `linear` | `true` |
+
+### Embedding Parameters
+
+| Parameter | Type | Used By | Example |
+|-----------|------|---------|---------|
+| `vocabSize` | integer | `embedding` | `30522` |
+| `embeddingDim` | integer | `embedding` | `768` |
+| `maxSeqLen` | integer | `embedding` | `512` |
+| `numEmbeddings` | integer | `embedding` | `50280` |
+
+### Normalization Parameters
+
+| Parameter | Type | Used By | Example |
+|-----------|------|---------|---------|
+| `normalizedShape` | integer | `layerNorm`, `rmsNorm` | `768` |
+| `numFeatures` | integer | `batchNorm` | `64` |
+
+### Feed-Forward Parameters
+
+| Parameter | Type | Used By | Example |
+|-----------|------|---------|---------|
+| `ffDim` | integer | `feedForward` | `3072` |
+| `intermediateSize` | integer | `swiglu`, `geglu` | `11008` |
+| `dim` | integer | `swiglu`, `geglu` | `4096` |
+
+### MoE Parameters
+
+| Parameter | Type | Used By | Example |
+|-----------|------|---------|---------|
+| `numExperts` | integer | `moeLayer`, `sharedExpertMoE` | `256` |
+| `expertDim` | integer | `moeLayer`, `sharedExpertMoE` | `7168` |
+| `topK` | integer | `moeLayer`, `sharedExpertMoE` | `8` |
+| `numSharedExperts` | integer | `sharedExpertMoE` | `1` |
+
+### Patch Embedding Parameters
+
+| Parameter | Type | Used By | Example |
+|-----------|------|---------|---------|
+| `imgSize` | integer | `patchEmbed` | `224` |
+| `patchSize` | integer | `patchEmbed` | `32` |
+| `embedDim` | integer | `patchEmbed` | `768` |
+| `inChans` | integer | `patchEmbed` | `3` |
+
+### Squeeze-Excitation Parameters
+
+| Parameter | Type | Used By | Example |
+|-----------|------|---------|---------|
+| `channels` | integer | `seBlock` | `32` |
+| `reduction` | integer | `seBlock` | `4` |
+
+### Input Parameters
+
+| Parameter | Type | Used By | Example |
+|-----------|------|---------|---------|
+| `shape` | array | `input` | `[1, 512, 768]` or `[3, 224, 224]` |
+
+## Appendix B: Operator Type Frequency
+
+Based on analysis of 288 architectures (9,735 total components):
+
+| Type | Count | Category |
+|------|-------|----------|
+| `add` | 2228 | Structural |
+| `rmsNorm` | 1820 | Normalization |
+| `groupedQueryAttention` | 894 | Attention |
+| `swiglu` | 448 | Feed-Forward |
+| `custom` | 407 | Core/IO |
+| `conv2d` | 393 | Convolution |
+| `layerNorm` | 383 | Normalization |
+| `feedForward` | 312 | Feed-Forward |
+| `input` | 309 | Core/IO |
+| `output` | 291 | Core/IO |
+| `relu` | 237 | Activation |
+| `multiHeadAttention` | 232 | Attention |
+| `linear` | 200 | Linear |
+| `sharedExpertMoE` | 188 | Specialized |
+| `moeLayer` | 173 | Specialized |
+| `transformerBlock` | 139 | Structural |
+| `batchNorm` | 127 | Normalization |
+| `attention` | 97 | Attention |
+| `embedding` | 79 | Linear |
+| `concatenate` | 75 | Structural |
+
+**Total distinct operator types observed:** 79
+
+## Appendix C: Scope Pattern Catalog
+
+Common scope patterns observed across the knowledge base:
+
+| Pattern | Occurrences | Meaning |
+|---------|-------------|---------|
+| `layer.N.attention` | 1283 | Attention sub-block within layer N |
+| `layer.N.ffn` | 710 | Feed-forward sub-block within layer N |
+| `layer.N` | 368 | Layer N (composite block) |
+| `block` | 116 | Generic block grouping |
+| `backbone` | 109 | Feature extraction backbone |
+| `encoder` | 78 | Encoder section |
+| `decoder` | 48 | Decoder section |
+| `head` | 44 | Task-specific output head |
+| `heads` | 44 | Multiple output heads |
+| `embeddings` | 39 | Embedding layer group |
+| `training` | 39 | Training-related components |
+| `features.stage.N` | 31 | Feature pyramid stage N |
+| `encoder.layer.N.attention` | 30 | Encoder layer N attention |
+| `mlp` | 27 | MLP sub-block |
+
+## Appendix D: Implementation Notes
+
+### D.1 JSON Parsing
+
+NAXS documents are standard JSON. Any JSON parser can consume them. No custom parser is required.
+
+Key implementation considerations:
+- Use a JSON parser that preserves unknown fields (e.g. serde's `#[serde(flatten)]` in Rust, `**kwargs` in Python).
+- Parameter values are heterogeneous (`int`, `float`, `bool`, `string`, `array`). Use a tagged union or `JsonValue` type.
+- `position` is always `{ "x": number, "y": number }`. Treat as `f64` for maximum precision.
+
+### D.2 Graph Construction
+
+To construct a directed graph from a NAXS document:
+
+1. Create a node for each component, keyed by `id`.
+2. For each connection, create a directed edge from `from` to `to`.
+3. Verify that component `inputs`/`outputs` are consistent with connections ([§13.2](/specification/validation#132-consistency), rules 9-10).
+4. The graph may be cyclic (recurrent architectures). Do not assume acyclicity.
+
+### D.3 Operator Type Resolution
+
+When resolving operator types:
+
+1. Check if `type` is in the standard registry ([§7.1](/specification/operator-registry#71-standard-operator-types)).
+2. If not, treat the component as an opaque node with its `params` preserved.
+3. Do not fail on unknown types.
+4. For `custom` type, use the `name` field as a human-readable description.
+
+### D.4 Parameter Type Coercion
+
+When reading parameters:
+
+- JSON integers → `int64`
+- JSON floats → `float64`
+- JSON booleans → `bool`
+- JSON strings → `string` (or symbolic dimension if in a shape array)
+- JSON arrays → `list` of mixed `int64`/`string`
+- Do not coerce between types (e.g. do not treat `768` as `768.0`).
+
+### D.5 Round-Trip Fidelity
+
+To ensure round-trip fidelity (read → write → read produces identical semantics):
+
+1. Preserve all fields, including unknown ones.
+2. Preserve key ordering within objects (use an ordered map, not a hash map).
+3. Do not modify parameter values during transit.
+4. Preserve numeric precision (do not convert integers to floats).
+5. Preserve `null` values in extension fields (but `null` is not a valid parameter value).
+
+## License
+
+This specification is licensed under the Creative Commons Attribution 4.0 International License (CC-BY-4.0) and the Apache License 2.0. Implementations may choose either license.

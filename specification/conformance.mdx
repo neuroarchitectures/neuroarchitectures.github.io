@@ -1,0 +1,83 @@
+---
+title: Conformance & Migrations
+description: Producer, consumer, and validator conformance; migration from Atlas model.json; glossary and change log.
+---
+
+# 20. Conformance
+
+### 20.1 Producer Conformance
+
+A **producer** is conforming if it generates documents that:
+
+1. Are valid JSON.
+2. Include all required top-level fields (`spec_version`, `id`, `name`, `components`, `connections`).
+3. Include all required component fields (`id`, `type`, `name`, `params`, `inputs`, `outputs`).
+4. Include all required connection fields (`id`, `from`, `to`).
+5. Satisfy all validation rules in [§13](/specification/validation#13-validation-rules).
+6. Set `spec_version` to a valid version string.
+
+### 20.2 Consumer Conformance
+
+A **consumer** is conforming if it:
+
+1. Parses any valid NAXS document without error.
+2. Preserves all unknown fields (top-level, component, connection) through read/write cycles.
+3. Constructs a directed graph from `components` and `connections`.
+4. Does not fail when encountering unknown operator types (treats them as opaque).
+5. Does not fail when encountering unknown parameter names.
+6. Checks `spec_version` and warns (but does not fail) on unknown minor versions.
+7. Rejects only on major version mismatch or structural validation failure ([§13.1](/specification/validation#131-structural-integrity)).
+
+### 20.3 Validator Conformance
+
+A **validator** is conforming if it:
+
+1. Checks all rules in [§13](/specification/validation#13-validation-rules).
+2. Reports errors with field paths and human-readable messages.
+3. Reports soft validation warnings ([§13.4](/specification/validation#134-soft-validation-warnings)) separately from errors.
+4. Can validate both individual documents and batch (directory) inputs.
+
+## 22. Migration from Atlas `model.json`
+
+The NAXS 1.0 format is a superset of the existing Atlas `model.json` format. Migration is straightforward:
+
+| Atlas `model.json` | NAXS 1.0 | Action |
+|---------------------|----------|--------|
+| `id` | `id` | Unchanged |
+| `name` | `name` | Unchanged |
+| `description` | `description` | Unchanged (optional in both) |
+| `components` | `components` | Unchanged |
+| `connections` | `connections` | Unchanged |
+| (none) | `spec_version` | **Add** `"1.0"` |
+| `realParamCount` | `real_param_count` | Rename (snake_case) |
+| `icon` | `icon` | Unchanged |
+| `category` | `category` | Unchanged |
+| (none) | `metadata` | **Optional**: add framework, paper, checkpoint |
+| (none) | `provenance` | **Optional**: add source, import info |
+
+Component fields (`id`, `type`, `name`, `params`, `inputs`, `outputs`, `scope`, `position`, `inputShape`, `notes`) are unchanged.
+
+Connection fields (`id`, `from`, `to`, `fromPort`, `toPort`) are unchanged.
+
+**Migration is additive only** — no existing field is removed or renamed (except `realParamCount` → `real_param_count`). A `model.json` file with `spec_version: "1.0"` added is a valid NAXS document.
+
+## 23. Glossary
+
+| Term | Definition |
+|------|-----------|
+| **Architecture** | A complete neural network topology, represented as a directed graph of components and connections. |
+| **Component** | A single node in the architecture graph; an instance of an operator type with concrete parameters. |
+| **Connection** | A directed edge between two components, indicating data flow. |
+| **Operator Type** | A named category of computation (e.g. `conv2d`, `multiHeadAttention`). |
+| **Parameter** | A configurable property of a component (e.g. `numHeads`, `kernelSize`). |
+| **Scope** | A dot-separated hierarchical path grouping components (e.g. `layer.0.attention`). |
+| **Port** | A named connection point on a component. NAXS 1.0 uses visual port labels; semantic ports are reserved for future versions. |
+| **Block** | A reusable sub-graph with an explicit interface. NAXS defines block templates ([§25](/specification/block-templates#25-block-templates-and-repetition)) that can be referenced and repeated. Blocks can also be represented as architectures with scoped components. |
+| **Provenance** | Information about how a document was created or transformed. |
+| **Metadata** | Vendor-specific information that does not affect architectural semantics. |
+
+## 24. Change Log
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2026-09-23 | Initial public draft. Includes block templates ([§25](/specification/block-templates#25-block-templates-and-repetition)): reusable subgraph definitions, `block_ref` components, `repeat` directives for layer/block repetition, parameter binding, and scope index substitution. |

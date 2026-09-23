@@ -1,0 +1,105 @@
+---
+title: Graph Model
+description: Connections (edges) and scope notation — how components form a directed graph.
+---
+
+# 8. Connection (Edge)
+
+A connection represents a directed edge in the architecture graph, from one component's output to another component's input.
+
+```json
+{
+  "id": "c1",
+  "from": "n1",
+  "to": "n2",
+  "fromPort": "bottom",
+  "toPort": "top"
+}
+```
+
+### 8.1 Required Connection Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique connection identifier within the document. |
+| `from` | string | ID of the source component. |
+| `to` | string | ID of the target component. |
+
+### 8.2 Optional Connection Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `fromPort` | string | Source port label (rendering hint). Common values: `"bottom"`, `"right"`, `"output_0"`. |
+| `toPort` | string | Target port label (rendering hint). Common values: `"top"`, `"left"`, `"input_0"`. |
+
+### 8.3 Connection Semantics
+
+- A connection indicates that data flows from `from` to `to`.
+- The `fromPort`/`toPort` fields are **visual rendering hints**, not semantic port identities. They describe where on the visual node the edge connects, not which logical port is used.
+- Multiple connections from the same source to different targets are allowed (fan-out).
+- Multiple connections from different sources to the same target are allowed (fan-in / merge).
+- Self-loops (where `from == to`) are allowed but should be documented.
+
+### 8.4 Redundancy with Component inputs/outputs
+
+The `connections` array and the component `inputs`/`outputs` fields encode the same connectivity information in two forms:
+
+- **Component `inputs`/`outputs`**: adjacency lists. `outputs` of component A lists the IDs of components that A feeds into. `inputs` of component B lists the IDs of components that feed into B.
+- **`connections` array**: explicit edge objects with IDs and port labels.
+
+Both forms **MUST** be consistent. If component A lists `"n5"` in its `outputs`, then there **MUST** be a connection `{ "from": "A", "to": "n5" }` in the `connections` array, and vice versa.
+
+Consumers MAY use either form for graph construction but SHOULD verify consistency.
+
+> **For Implementers:** You can build the graph from either `connections` or `inputs`/`outputs` alone, but you SHOULD verify both forms agree. See [§13.2](/specification/validation#132-consistency), rules 9–10.
+
+### 8.5 Port-Level Connectivity (Future Extension)
+
+NAXS 1.0 uses node-level connectivity (edges connect components, not specific ports). A future version may introduce explicit port references:
+
+```json
+{
+  "from": "n4",
+  "fromPort": "output_0",
+  "to": "n5",
+  "toPort": "input_1"
+}
+```
+
+where `output_0` and `input_1` are semantic port identifiers defined by the operator type. This is reserved for future versions.
+
+## 12. Scope Notation
+
+The `scope` field on components provides hierarchical grouping using dot notation:
+
+```
+layer.0.attention
+layer.0.ffn
+encoder.block.1.norm
+features.stage.1
+backbone.stem
+```
+
+### 12.1 Scope Rules
+
+- Scope segments are separated by `.`.
+- Numeric segments (e.g. `0`, `1`, `2`) typically indicate layer/block indices.
+- Scope is **informational**: it aids grouping, visualization, and analysis but does not define execution order.
+- Two components with the same scope belong to the same logical group.
+- Components without a scope are in the root group.
+
+### 12.2 Common Scope Patterns
+
+| Pattern | Example | Meaning |
+|---------|---------|---------|
+| `layer.N.attention` | `layer.0.attention` | Layer N's attention sub-block |
+| `layer.N.ffn` | `layer.0.ffn` | Layer N's feed-forward sub-block |
+| `layer.N` | `layer.0` | Layer N (composite block) |
+| `encoder.layer.N` | `encoder.layer.0` | Encoder's layer N |
+| `decoder.layer.N` | `decoder.layer.0` | Decoder's layer N |
+| `backbone` | `backbone` | Backbone / feature extractor |
+| `head` | `head` | Task-specific head |
+| `embeddings` | `embeddings` | Embedding layer group |
+| `stem` | `stem` | Initial processing layers |
+
+> See [Appendix C](/specification/appendices#appendix-c-scope-pattern-catalog) for the full catalog of observed scope patterns.
