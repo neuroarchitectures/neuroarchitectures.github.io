@@ -23,7 +23,7 @@ npm run build    # static export to site.zip (used by CI)
   python3 scripts/split_spec.py ../naxs/specification.md
   ```
 
-- Example documents in `snippets/examples/` are copies of the [canonical examples](https://github.com/neuroarchitectures/naxs/tree/main/naxs/v1.0/examples) in the spec repo.
+- Example documents in `snippets/examples/` are copies of the [canonical examples](https://github.com/neuroarchitectures/naxs/tree/main/naxs/v0.1/examples) in the spec repo.
 
 ## Deployment
 

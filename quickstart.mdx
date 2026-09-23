@@ -13,7 +13,7 @@ Create a file `minimal-mlp.naxs.json`. It describes a one-layer MLP that maps a 
 
 ```json
 {
-  "spec_version": "1.0",
+  "spec_version": "0.1",
   "id": "minimal-mlp",
   "name": "Minimal MLP",
   "components": [
@@ -40,11 +40,11 @@ Create a file `minimal-mlp.naxs.json`. It describes a one-layer MLP that maps a 
 }
 ```
 
-That is a complete, valid NAXS 1.0 document. Required pieces:
+That is a complete, valid NAXS 0.1 document. Required pieces:
 
 | Piece | Role |
 |-------|------|
-| `spec_version` | Must be `"1.0"` |
+| `spec_version` | Must be `"0.1"` |
 | `id`, `name` | Identity and display name |
 | `components[]` | The graph nodes — each a typed operator with `params` |
 | `connections[]` | The graph edges — explicit data flow, consistent with `inputs`/`outputs` |
@@ -87,13 +87,13 @@ else:
 
 ## 3. Validate with the JSON Schema
 
-For structural validation in any language, use the [JSON Schema](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/schema.json) (draft 2020-12) directly:
+For structural validation in any language, use the [JSON Schema](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v0.1/schema.json) (draft 2020-12) directly:
 
 ```bash
 pip install jsonschema
 python -c "
 import json, jsonschema
-schema = json.load(open('naxs/v1.0/schema.json'))
+schema = json.load(open('naxs/v0.1/schema.json'))
 doc = json.load(open('minimal-mlp.naxs.json'))
 jsonschema.validate(doc, schema)
 print('Valid!')
@@ -104,8 +104,8 @@ You can also reference the schema from your documents:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/neuroarchitectures/naxs/main/naxs/v1.0/schema.json",
-  "spec_version": "1.0"
+  "$schema": "https://raw.githubusercontent.com/neuroarchitectures/naxs/main/naxs/v0.1/schema.json",
+  "spec_version": "0.1"
 }
 ```
 
@@ -116,7 +116,7 @@ You can also reference the schema from your documents:
     Study six annotated documents — symbolic shapes, vendor custom operators, and a 12-layer transformer compressed to 7 components with block templates.
   </Card>
   <Card title="Specification" icon="book-open" href="/specification/introduction" horizontal>
-    Read the full NAXS 1.0 specification.
+    Read the full NAXS 0.1 specification.
   </Card>
   <Card title="Quick Reference Card" icon="table" href="/specification/quick-reference" horizontal>
     A one-page cheat sheet of required fields and key rules — built for agents coding against the spec.

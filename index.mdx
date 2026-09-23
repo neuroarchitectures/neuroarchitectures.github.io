@@ -14,7 +14,7 @@ Any tool, vendor, research group, or automated agent can produce or consume a NA
     Author and validate your first NAXS document in five minutes.
   </Card>
   <Card title="Specification" icon="book-open" href="/specification/introduction" horizontal>
-    The complete NAXS 1.0 reference — components, connections, operator types, and block templates.
+    The complete NAXS 0.1 reference — components, connections, operator types, and block templates.
   </Card>
 </CardGroup>
 
@@ -24,7 +24,7 @@ A NAXS document is a single JSON file that describes an architecture as a **dire
 
 ```text
 my-architecture.naxs.json
-├── spec_version        # "1.0"
+├── spec_version        # "0.1"
 ├── id / name           # identity & display
 ├── components[]        # graph nodes — typed operators with parameters
 ├── connections[]       # graph edges — explicit data flow
@@ -36,7 +36,7 @@ The smallest valid document is about 10 lines of JSON:
 
 ```json
 {
-  "spec_version": "1.0",
+  "spec_version": "0.1",
   "id": "minimal-mlp",
   "name": "Minimal MLP",
   "components": [
@@ -106,7 +106,7 @@ NAXS is **not** an execution format (like ONNX), a training configuration (like 
   <Card title="pynaxs — reference validator" icon="check-circle-2" href="https://github.com/neuroarchitectures/naxs/tree/main/pynaxs" horizontal>
     Python CLI and API implementing all §13 and §25.11 validation rules, with warnings for soft violations.
   </Card>
-  <Card title="JSON Schema" icon="file-json" href="https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/schema.json" horizontal>
+  <Card title="JSON Schema" icon="file-json" href="https://github.com/neuroarchitectures/naxs/blob/main/naxs/v0.1/schema.json" horizontal>
     Machine-readable draft 2020-12 schema for structural validation in any language.
   </Card>
   <Card title="Examples gallery" icon="layout-grid" href="/examples" horizontal>
@@ -132,6 +132,6 @@ NAXS is developed in the open by the [neuroarchitectures](https://github.com/neu
     Write a document, validate it with `pynaxs`, and run it through the JSON Schema — end to end in five minutes.
   </Card>
   <Card title="Specification" icon="book-open" href="/specification/introduction" arrow>
-    Read the full NAXS 1.0 specification, from document structure to block templates and repetition.
+    Read the full NAXS 0.1 specification, from document structure to block templates and repetition.
   </Card>
 </CardGroup>

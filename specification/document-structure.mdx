@@ -9,8 +9,8 @@ A NAXS document is a single JSON object with the following top-level structure:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/neuroarchitectures/naxs/main/naxs/v1.0/schema.json",
-  "spec_version": "1.0",
+  "$schema": "https://raw.githubusercontent.com/neuroarchitectures/naxs/main/naxs/v0.1/schema.json",
+  "spec_version": "0.1",
   "id": "bert-base",
   "name": "BERT-Base",
   "description": "BERT-Base: 12-layer transformer encoder, hidden size 768.",
@@ -23,7 +23,7 @@ A NAXS document is a single JSON object with the following top-level structure:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `spec_version` | string | NAXS specification version. Must be `"1.0"`. |
+| `spec_version` | string | NAXS specification version. Must be `"0.1"`. |
 | `id` | string | Unique architecture identifier. Should be a URL-safe slug (e.g. `"bert-base"`, `"resnet-50"`). |
 | `name` | string | Human-readable display name. |
 | `components` | array | List of component objects (the graph nodes). Must contain at least one component. |

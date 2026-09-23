@@ -5,16 +5,16 @@ description: Six annotated NAXS documents — from a minimal MLP to a nested-blo
 
 # Examples gallery
 
-Every document below is a complete, valid NAXS 1.0 file. They also live in the spec repository under [`naxs/v1.0/examples/`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/examples) — the canonical copies used by the `pynaxs` test suite.
+Every document below is a complete, valid NAXS 0.1 file. They also live in the spec repository under [`naxs/v0.1/examples/`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v0.1/examples) — the canonical copies used by the `pynaxs` test suite.
 
 | Document | Demonstrates | Size |
 |----------|--------------|------|
-| [`minimal_mlp.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/examples/minimal_mlp.json) | Smallest valid document | 2 components |
-| [`symbolic_shape.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/examples/symbolic_shape.json) | Symbolic / dynamic dimensions | 3 components |
-| [`vendor_custom.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/examples/vendor_custom.json) | Custom operators + vendor metadata | 3 components |
-| [`bert_base_repetition.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/examples/bert_base_repetition.json) | 12-layer transformer via block templates | 5 components |
-| [`resnet_repetition.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/examples/resnet_repetition.json) | 4-stage ResNet via repeat directives | 10 components |
-| [`nested_blocks_llama.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/examples/nested_blocks_llama.json) | Nested block templates + derived params | 6 components |
+| [`minimal_mlp.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v0.1/examples/minimal_mlp.json) | Smallest valid document | 2 components |
+| [`symbolic_shape.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v0.1/examples/symbolic_shape.json) | Symbolic / dynamic dimensions | 3 components |
+| [`vendor_custom.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v0.1/examples/vendor_custom.json) | Custom operators + vendor metadata | 3 components |
+| [`bert_base_repetition.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v0.1/examples/bert_base_repetition.json) | 12-layer transformer via block templates | 5 components |
+| [`resnet_repetition.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v0.1/examples/resnet_repetition.json) | 4-stage ResNet via repeat directives | 10 components |
+| [`nested_blocks_llama.json`](https://github.com/neuroarchitectures/naxs/blob/main/naxs/v0.1/examples/nested_blocks_llama.json) | Nested block templates + derived params | 6 components |
 
 Expand a card to read the full document.
 
@@ -24,7 +24,7 @@ The smallest valid NAXS document — a one-layer MLP mapping a 10-dimensional in
 
 ```json minimal_mlp.json
 {
-  "spec_version": "1.0",
+  "spec_version": "0.1",
   "id": "minimal-mlp",
   "name": "Minimal MLP",
   "description": "The smallest valid NAXS document: a single linear layer.",
@@ -66,7 +66,7 @@ Dynamic dimensions — array parameters may contain string elements (e.g. `"batc
 
 ```json symbolic_shape.json
 {
-  "spec_version": "1.0",
+  "spec_version": "0.1",
   "id": "symbolic-shape-example",
   "name": "Symbolic Shape Example",
   "description": "Demonstrates symbolic (dynamic) dimensions in tensor shapes.",
@@ -116,7 +116,7 @@ Custom operator types and vendor metadata — unknown types and fields are prese
 
 ```json vendor_custom.json
 {
-  "spec_version": "1.0",
+  "spec_version": "0.1",
   "id": "vendor-custom-arch",
   "name": "Vendor Custom Architecture",
   "description": "Demonstrates custom operator types, vendor metadata, and provenance.",
@@ -182,11 +182,11 @@ The flagship compression demo — a 12-layer transformer encoder expressed with 
 
 ```json bert_base_repetition.json
 {
-  "$schema": "https://raw.githubusercontent.com/neuroarchitectures/naxs/main/naxs/v1.0/schema.json",
-  "spec_version": "1.0",
+  "$schema": "https://raw.githubusercontent.com/neuroarchitectures/naxs/main/naxs/v0.1/schema.json",
+  "spec_version": "0.1",
   "id": "bert-base-repetition",
   "name": "BERT-Base (with Block Templates)",
-  "description": "BERT-Base represented with a single block template and a repeat directive. 5 components expand to the same 51-component graph as the NAXS 1.0 BERT-Base example.",
+  "description": "BERT-Base represented with a single block template and a repeat directive. 5 components expand to the same 51-component graph as the NAXS 0.1 BERT-Base example.",
   "category": "NLP",
   "block_templates": [
     {
@@ -357,8 +357,8 @@ A 4-stage ResNet using `repeat` with per-instance `overrides` where stage parame
 
 ```json resnet_repetition.json
 {
-  "$schema": "https://raw.githubusercontent.com/neuroarchitectures/naxs/main/naxs/v1.0/schema.json",
-  "spec_version": "1.0",
+  "$schema": "https://raw.githubusercontent.com/neuroarchitectures/naxs/main/naxs/v0.1/schema.json",
+  "spec_version": "0.1",
   "id": "resnet-50-repetition",
   "name": "ResNet-50 (with Block Templates)",
   "description": "ResNet-50 represented with block templates. Shows per-instance parameter overrides for stages with different channel counts and block repetitions.",
@@ -610,8 +610,8 @@ A Llama-style architecture with nested block templates and derived parameters vi
 
 ```json nested_blocks_llama.json
 {
-  "$schema": "https://raw.githubusercontent.com/neuroarchitectures/naxs/main/naxs/v1.0/schema.json",
-  "spec_version": "1.0",
+  "$schema": "https://raw.githubusercontent.com/neuroarchitectures/naxs/main/naxs/v0.1/schema.json",
+  "spec_version": "0.1",
   "id": "llama-style-repetition",
   "name": "Llama-Style (Nested Blocks + Expr Params)",
   "description": "Demonstrates nested block templates, expression-based parameter derivation ($expr), and per-instance overrides. A transformer decoder with RMSNorm, GQA, SwiGLU FFN, and RoPE.",

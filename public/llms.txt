@@ -7,7 +7,7 @@ Docs:
 - Homepage: https://neuroarchitectures.github.io
 - Quickstart — author your first NAXS document: https://neuroarchitectures.github.io/quickstart
 - Examples gallery: https://neuroarchitectures.github.io/examples
-- Specification — complete NAXS 1.0 reference: https://neuroarchitectures.github.io/specification/introduction
+- Specification — complete NAXS 0.1 reference: https://neuroarchitectures.github.io/specification/introduction
 - Quick Reference Card: https://neuroarchitectures.github.io/specification/quick-reference
 - Document Structure (§4–§6): https://neuroarchitectures.github.io/specification/document-structure
 - Operator Type Registry (§7): https://neuroarchitectures.github.io/specification/operator-registry
@@ -24,4 +24,4 @@ Optional:
 
 - NAXS specification source: https://github.com/neuroarchitectures/naxs/blob/main/specification.md
 - Reference Python validator (pynaxs): https://github.com/neuroarchitectures/naxs/tree/main/pynaxs
-- JSON Schema: https://github.com/neuroarchitectures/naxs/blob/main/naxs/v1.0/schema.json
+- JSON Schema: https://github.com/neuroarchitectures/naxs/blob/main/naxs/v0.1/schema.json

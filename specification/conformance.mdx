@@ -39,16 +39,16 @@ A **validator** is conforming if it:
 
 ## 22. Migration from Atlas `model.json`
 
-The NAXS 1.0 format is a superset of the existing Atlas `model.json` format. Migration is straightforward:
+The NAXS 0.1 format is a superset of the existing Atlas `model.json` format. Migration is straightforward:
 
-| Atlas `model.json` | NAXS 1.0 | Action |
+| Atlas `model.json` | NAXS 0.1 | Action |
 |---------------------|----------|--------|
 | `id` | `id` | Unchanged |
 | `name` | `name` | Unchanged |
 | `description` | `description` | Unchanged (optional in both) |
 | `components` | `components` | Unchanged |
 | `connections` | `connections` | Unchanged |
-| (none) | `spec_version` | **Add** `"1.0"` |
+| (none) | `spec_version` | **Add** `"0.1"` |
 | `realParamCount` | `real_param_count` | Rename (snake_case) |
 | `icon` | `icon` | Unchanged |
 | `category` | `category` | Unchanged |
@@ -59,7 +59,7 @@ Component fields (`id`, `type`, `name`, `params`, `inputs`, `outputs`, `scope`, 
 
 Connection fields (`id`, `from`, `to`, `fromPort`, `toPort`) are unchanged.
 
-**Migration is additive only** — no existing field is removed or renamed (except `realParamCount` → `real_param_count`). A `model.json` file with `spec_version: "1.0"` added is a valid NAXS document.
+**Migration is additive only** — no existing field is removed or renamed (except `realParamCount` → `real_param_count`). A `model.json` file with `spec_version: "0.1"` added is a valid NAXS document.
 
 ## 23. Glossary
 
@@ -71,7 +71,7 @@ Connection fields (`id`, `from`, `to`, `fromPort`, `toPort`) are unchanged.
 | **Operator Type** | A named category of computation (e.g. `conv2d`, `multiHeadAttention`). |
 | **Parameter** | A configurable property of a component (e.g. `numHeads`, `kernelSize`). |
 | **Scope** | A dot-separated hierarchical path grouping components (e.g. `layer.0.attention`). |
-| **Port** | A named connection point on a component. NAXS 1.0 uses visual port labels; semantic ports are reserved for future versions. |
+| **Port** | A named connection point on a component. NAXS 0.1 uses visual port labels; semantic ports are reserved for future versions. |
 | **Block** | A reusable sub-graph with an explicit interface. NAXS defines block templates ([§25](/specification/block-templates#25-block-templates-and-repetition)) that can be referenced and repeated. Blocks can also be represented as architectures with scoped components. |
 | **Provenance** | Information about how a document was created or transformed. |
 | **Metadata** | Vendor-specific information that does not affect architectural semantics. |
@@ -80,4 +80,4 @@ Connection fields (`id`, `from`, `to`, `fromPort`, `toPort`) are unchanged.
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0 | 2026-09-23 | Initial public draft. Includes block templates ([§25](/specification/block-templates#25-block-templates-and-repetition)): reusable subgraph definitions, `block_ref` components, `repeat` directives for layer/block repetition, parameter binding, and scope index substitution. |
+| 0.1 | 2026-09-23 | Initial public draft. Includes block templates ([§25](/specification/block-templates#25-block-templates-and-repetition)): reusable subgraph definitions, `block_ref` components, `repeat` directives for layer/block repetition, parameter binding, and scope index substitution. |
